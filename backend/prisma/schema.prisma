@@ -1,0 +1,232 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// --- ENUMS ---
+enum Role {
+  student
+  counselor
+  admin
+}
+
+enum AppointmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum CounselingType {
+  online
+  offline
+}
+
+// --- TABEL AUTH & PENGGUNA ---
+model User {
+  id                   String   @id @default(uuid()) @db.Char(36)
+  email                String   @unique @db.VarChar(100)
+  username             String   @unique @db.VarChar(50)
+  password_hash        String   @db.VarChar(255)
+  role                 Role     @default(student)
+  reset_token          String?  @db.VarChar(255)
+  reset_token_expires  DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  // Relasi Profil 1:1
+  student       Student?
+  counselor     Counselor?
+  admin         Admin?
+
+  // Relasi Fitur Pendukung
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+  notifications    Notification[]
+}
+
+// --- TABEL PROFIL ---
+model Student {
+  id             String   @id @default(uuid()) @db.Char(36)
+  userId         String   @unique @db.Char(36)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName       String   @db.VarChar(150)
+  nim            String?  @unique @db.VarChar(20)
+  faculty        String?  @db.VarChar(100)
+  major          String?  @db.VarChar(100)
+  semester       Int?
+  university     String?  @db.VarChar(150)
+  phoneNumber    String?  @db.VarChar(20)
+  avatarUrl      String?  @db.VarChar(255)
+  wellbeingScore  Int      @default(50)
+  
+  // Kontak Darurat (Sesuai UI Profil Mahasiswa)
+  emergencyContactName  String?  @db.VarChar(100)
+  emergencyContactPhone String?  @db.VarChar(20)
+
+  // Notification Preferences (Sesuai UI My Profile)
+  emailReminders        Boolean  @default(true)
+  smsAlerts             Boolean  @default(false)
+
+  appointments  Appointment[]
+  clinicalNotes ClinicalNote[]
+  moodLogs      MoodLog[]
+  reviews       Review[]
+}
+
+model MoodLog {
+  id         String   @id @default(uuid()) @db.Char(36)
+  studentId  String   @db.Char(36)
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  moodValue  Int      // 4, 1, atau -2
+  createdAt  DateTime @default(now())
+
+  @@index([studentId, createdAt])
+}
+
+model Message {
+  id           String   @id @default(uuid()) @db.Char(36)
+  senderId     String   @db.Char(36)
+  receiverId   String   @db.Char(36)
+  sender       User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiver     User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  content      String   @db.Text
+  fileUrl      String?  @db.VarChar(255) // Untuk Chat Attachments
+  isRead       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@index([senderId, receiverId])
+}
+
+model Counselor {
+  id              String   @id @default(uuid()) @db.Char(36)
+  userId          String   @unique @db.Char(36)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName        String   @db.VarChar(150)
+  specialization  String   @db.VarChar(100)
+  experienceYears Int      @default(0)
+  bioDescription  String?  @db.Text
+  isActive        Boolean  @default(true)
+  avatarUrl       String?  @db.VarChar(255)
+
+  // Counselor Settings (Sesuai UI Counselor Settings)
+  autoApprove        Boolean @default(false)
+  minNoticeHours     Int     @default(24)
+  defaultMeetingLink String? @db.VarChar(255)
+  roomName           String? @default("Ruang Konseling A") @db.VarChar(100)
+  
+  // Rating Stats (Auto-calculated)
+  averageRating      Float   @default(0.0)
+  totalReviews       Int     @default(0)
+
+  schedules       CounselorSchedule[]
+  appointments    Appointment[]
+  clinicalNotes   ClinicalNote[]
+  reviews         Review[]
+}
+
+model Admin {
+  id         String   @id @default(uuid()) @db.Char(36)
+  userId     String   @unique @db.Char(36)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName   String   @db.VarChar(150)
+  department String   @db.VarChar(100)
+}
+
+// --- TABEL TRANSAKSI & PENJADWALAN ---
+model CounselorSchedule {
+  id            String    @id @default(uuid()) @db.Char(36)
+  counselorId   String    @db.Char(36)
+  counselor     Counselor @relation(fields: [counselorId], references: [id], onDelete: Cascade)
+  availableDate DateTime  @db.Date
+  startTime     DateTime  @db.Time
+  endTime       DateTime  @db.Time
+  isBooked      Boolean   @default(false)
+
+  appointments  Appointment[]
+}
+
+model Appointment {
+  id              String            @id @default(uuid()) @db.Char(36)
+  studentId       String            @db.Char(36)
+  counselorId     String            @db.Char(36)
+  scheduleId      String            @db.Char(36)
+
+  student         Student           @relation(fields: [studentId], references: [id])
+  counselor       Counselor         @relation(fields: [counselorId], references: [id])
+  schedule        CounselorSchedule @relation(fields: [scheduleId], references: [id])
+
+  appointmentDate DateTime          @db.Date
+  startTime       DateTime          @db.Time
+  endTime         DateTime          @db.Time
+  counselingType  CounselingType
+  meetingLink     String?           @db.VarChar(255)
+  topicOrReason   String            @db.Text
+  status          AppointmentStatus @default(PENDING)
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  clinicalNote    ClinicalNote?
+  review          Review?
+}
+
+model ClinicalNote {
+  id                String      @id @default(uuid()) @db.Char(36)
+  appointmentId     String      @unique @db.Char(36)
+  appointment       Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  counselorId       String      @db.Char(36)
+  counselor         Counselor   @relation(fields: [counselorId], references: [id])
+
+  studentId         String      @db.Char(36)
+  student           Student     @relation(fields: [studentId], references: [id])
+
+  diagnosisCategory String     @db.VarChar(100)
+  privateNotes      String?    @db.Text
+  actionPlan        String?    @db.Text
+  createdAt         DateTime   @default(now())
+}
+
+model Review {
+  id            String      @id @default(uuid()) @db.Char(36)
+  appointmentId String      @unique @db.Char(36)
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  studentId     String      @db.Char(36)
+  student       Student     @relation(fields: [studentId], references: [id])
+
+  counselorId   String      @db.Char(36)
+  counselor     Counselor   @relation(fields: [counselorId], references: [id])
+
+  rating        Int         @db.TinyInt // 1-5
+  comment       String?     @db.Text
+  createdAt     DateTime    @default(now())
+}
+
+// --- TABEL FITUR PENDUKUNG ---
+model Notification {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    String   @db.Char(36)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String   @db.VarChar(100)
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model SystemSetting {
+  id                      Int      @id @default(1) // Hanya akan ada 1 row (ID: 1)
+  universityName          String   @default("UniCounsel") @db.VarChar(150)
+  supportEmail            String   @default("support@university.edu") @db.VarChar(100)
+  autoApproveAppointments Boolean  @default(false)
+  emailNotifications      Boolean  @default(true)
+  counselorAlerts         Boolean  @default(true)
+  twoFactorAuth           Boolean  @default(false)
+  updatedAt               DateTime @updatedAt
+}
