@@ -1,4 +1,4 @@
-import { Input, InputProps } from "../atoms/Input"
+import { Input, type InputProps } from "../atoms/Input"
 import { Label } from "../atoms/Label"
 import React from "react"
 

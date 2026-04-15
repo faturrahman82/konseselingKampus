@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -208,7 +208,7 @@ model Review {
   counselorId   String      @db.Char(36)
   counselor     Counselor   @relation(fields: [counselorId], references: [id])
 
-  rating        Int         // 1-5
+  rating        Int         @db.TinyInt // 1-5
   comment       String?     @db.Text
   createdAt     DateTime    @default(now())
 }
