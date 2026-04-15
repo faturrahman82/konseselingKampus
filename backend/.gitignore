@@ -1,3 +1,22 @@
-node_modules
-# Keep environment variables out of version control
+# Dependencies
+node_modules/
+
+# Environment Variables (JANGAN dipush ke GitHub!)
 .env
+.env.local
+.env.production
+
+# Prisma generated
+prisma/generated/
+
+# Uploads folder contents (tapi biarkan foldernya tetap ada)
+uploads/*
+!uploads/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db

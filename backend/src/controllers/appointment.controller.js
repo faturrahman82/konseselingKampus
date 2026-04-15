@@ -80,6 +80,19 @@ const cancelMyAppointment = async (req, res, next) => {
     }
 };
 
+const updateMeetingLink = async (req, res, next) => {
+    try {
+        const result = await appointmentService.updateMeetingLink(
+            req.user.userId,
+            req.params.id,
+            req.body.meetingLink
+        );
+        res.json({ success: true, message: 'Meeting link updated.', data: result });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = { 
     createAppointment, 
     updateStatus, 
@@ -88,5 +101,6 @@ module.exports = {
     addClinicalNote, 
     getMyStudents, 
     getStudentDetail,
-    cancelMyAppointment
+    cancelMyAppointment,
+    updateMeetingLink
 };

@@ -39,29 +39,66 @@ const getChatHistory = async (userId, otherUserId) => {
 };
 
 /**
- * Service: Get list of users the current user has chatted with (Inbox list)
+ * Service: Get inbox list - kontak dari pesan & dari appointment aktif
+ * Returns: { userId, name, avatarUrl, role, lastMessage, lastMessageAt, unreadCount }
  */
 const getInboxList = async (userId) => {
-    // This is a simplified version. For a real app, you'd want to aggregate the latest message.
-    const sentTo = await prisma.message.findMany({
-        where: { senderId: userId },
-        select: { receiverId: true },
-        distinct: ['receiverId'],
+    // 1. Cari user saat ini untuk tahu rolenya
+    const me = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+            role: true,
+            student: { select: { id: true } },
+            counselor: { select: { id: true } }
+        }
     });
 
-    const receivedFrom = await prisma.message.findMany({
-        where: { receiverId: userId },
-        select: { senderId: true },
-        distinct: ['senderId'],
+    // 2. Semua pesan yang dikirim/diterima user ini
+    const allMessages = await prisma.message.findMany({
+        where: { OR: [{ senderId: userId }, { receiverId: userId }] },
+        orderBy: { createdAt: 'desc' },
     });
 
-    const contactIds = [...new Set([
-        ...sentTo.map(m => m.receiverId),
-        ...receivedFrom.map(m => m.senderId)
-    ])];
+    // 3. Bangun map: pesan terakhir per kontak
+    const latestMsgMap = new Map();
+    for (const msg of allMessages) {
+        const contactId = msg.senderId === userId ? msg.receiverId : msg.senderId;
+        if (!latestMsgMap.has(contactId)) {
+            latestMsgMap.set(contactId, msg);
+        }
+    }
 
-    const contacts = await prisma.user.findMany({
-        where: { id: { in: contactIds } },
+    // 4. Tambah kontak dari appointment (agar inbox tidak kosong untuk user baru)
+    let appointmentContactIds = [];
+    if (me?.role === 'student' && me?.student) {
+        const appts = await prisma.appointment.findMany({
+            where: {
+                studentId: me.student.id,
+                status: { in: ['PENDING', 'APPROVED', 'COMPLETED'] }
+            },
+            select: { counselor: { select: { userId: true } } },
+            distinct: ['counselorId']
+        });
+        appointmentContactIds = appts.map(a => a.counselor.userId);
+    } else if (me?.role === 'counselor' && me?.counselor) {
+        const appts = await prisma.appointment.findMany({
+            where: {
+                counselorId: me.counselor.id,
+                status: { in: ['PENDING', 'APPROVED', 'COMPLETED'] }
+            },
+            select: { student: { select: { userId: true } } },
+            distinct: ['studentId']
+        });
+        appointmentContactIds = appts.map(a => a.student.userId);
+    }
+
+    // 5. Gabungkan kontak unik
+    const allContactIds = [...new Set([...latestMsgMap.keys(), ...appointmentContactIds])];
+    if (allContactIds.length === 0) return [];
+
+    // 6. Ambil info user kontak
+    const contactUsers = await prisma.user.findMany({
+        where: { id: { in: allContactIds } },
         select: {
             id: true,
             username: true,
@@ -71,13 +108,47 @@ const getInboxList = async (userId) => {
         }
     });
 
-    return contacts.map(c => ({
-        id: c.id,
-        username: c.username,
-        role: c.role,
-        fullName: c.role === 'student' ? c.student?.fullName : c.counselor?.fullName,
-        avatarUrl: c.role === 'student' ? c.student?.avatarUrl : c.counselor?.avatarUrl,
-    }));
+    // 7. Hitung unread per pengirim
+    const unreadCounts = await prisma.message.groupBy({
+        by: ['senderId'],
+        where: { receiverId: userId, isRead: false },
+        _count: { id: true }
+    });
+    const unreadMap = new Map(unreadCounts.map(u => [u.senderId, u._count.id]));
+
+    // 8. Bangun respons final
+    const result = contactUsers.map(c => {
+        const lastMsg = latestMsgMap.get(c.id);
+        return {
+            userId: c.id,
+            name: c.role === 'student'
+                ? (c.student?.fullName || c.username)
+                : (c.counselor?.fullName || c.username),
+            avatarUrl: c.role === 'student' ? c.student?.avatarUrl : c.counselor?.avatarUrl,
+            role: c.role,
+            lastMessage: lastMsg?.content || '',
+            lastMessageAt: lastMsg?.createdAt || null,
+            unreadCount: unreadMap.get(c.id) || 0,
+        };
+    });
+
+    // Urutkan: ada pesan terakhir → atas
+    return result.sort((a, b) => {
+        if (!a.lastMessageAt && !b.lastMessageAt) return 0;
+        if (!a.lastMessageAt) return 1;
+        if (!b.lastMessageAt) return -1;
+        return new Date(b.lastMessageAt) - new Date(a.lastMessageAt);
+    });
 };
 
-module.exports = { sendMessage, getChatHistory, getInboxList };
+/**
+ * Service: Mark all messages from a contact as read
+ */
+const markMessagesAsRead = async (userId, otherUserId) => {
+    return await prisma.message.updateMany({
+        where: { senderId: otherUserId, receiverId: userId, isRead: false },
+        data: { isRead: true },
+    });
+};
+
+module.exports = { sendMessage, getChatHistory, getInboxList, markMessagesAsRead };

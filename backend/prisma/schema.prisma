@@ -174,6 +174,10 @@ model Appointment {
 
   clinicalNote    ClinicalNote?
   review          Review?
+
+  @@index([studentId, status])
+  @@index([counselorId, status])
+  @@index([appointmentDate])
 }
 
 model ClinicalNote {
@@ -218,6 +222,9 @@ model Notification {
   message   String   @db.Text
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@index([createdAt])
 }
 
 model SystemSetting {

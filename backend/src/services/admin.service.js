@@ -1,6 +1,7 @@
 const prisma = require('../config/database');
 const bcrypt = require('bcryptjs');
 const { AppError } = require('../utils/error.handler');
+const emailService = require('./email.service');
 
 /**
  * Register a new Counselor (Admin only)
@@ -38,6 +39,13 @@ const createCounselor = async ({ email, username, password, fullName, specializa
 
         return { user, counselor };
     });
+
+    // Kirim email selamat datang + kredensial (non-blocking)
+    emailService.sendWelcomeCounselorEmail(email, {
+        fullName,
+        username,
+        password, // plain text sebelum di-hash
+    }).catch(err => console.error('[EMAIL ERROR] Welcome counselor:', err.message));
 
     return result;
 };

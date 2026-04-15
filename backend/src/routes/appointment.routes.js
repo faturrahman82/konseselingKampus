@@ -176,4 +176,13 @@ router.get('/student/:studentId', verifyToken, requireRole(['counselor']), appoi
  */
 router.delete('/:id', verifyToken, requireRole(['student']), appointmentController.cancelMyAppointment);
 
+/**
+ * @swagger
+ * /api/appointments/{id}/meeting-link:
+ *   patch:
+ *     summary: Update link rapat (Counselor Only, hanya untuk APPROVED)
+ *     tags: [Appointments]
+ */
+router.patch('/:id/meeting-link', verifyToken, requireRole(['counselor']), appointmentController.updateMeetingLink);
+
 module.exports = router;

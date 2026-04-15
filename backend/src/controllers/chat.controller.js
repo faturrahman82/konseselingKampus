@@ -29,4 +29,11 @@ const getInbox = async (req, res, next) => {
     }
 };
 
-module.exports = { sendMessage, getChatHistory, getInbox };
+const markRead = async (req, res, next) => {
+    try {
+        await chatService.markMessagesAsRead(req.user.userId, req.params.otherUserId);
+        res.json({ success: true });
+    } catch (error) { next(error); }
+};
+
+module.exports = { sendMessage, getChatHistory, getInbox, markRead };

@@ -54,5 +54,6 @@ router.get('/:otherUserId', verifyToken, chatController.getChatHistory);
  *                 type: string
  */
 router.post('/', verifyToken, chatController.sendMessage);
+router.patch('/:otherUserId/read', verifyToken, chatController.markRead);
 
 module.exports = router;

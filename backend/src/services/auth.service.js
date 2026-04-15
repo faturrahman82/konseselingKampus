@@ -2,6 +2,7 @@ const prisma = require('../config/database');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { AppError } = require('../utils/error.handler');
+const { sendResetPasswordEmail } = require('./email.service');
 const crypto = require('crypto');
 
 /**
@@ -187,11 +188,12 @@ const forgotPassword = async (email) => {
         },
     });
 
-    // Simulasi pengiriman email
-    const resetLink = `http://localhost:5173/reset-password?token=${resetToken}`;
-    console.log(`\n[EMAIL SIMULATION] To: ${email}\nReset Link: ${resetLink}\n`);
+    // Kirim email atur ulang kata sandi via Gmail (blocking - tunggu sampai terkirim)
+    const resetLink = `http://localhost:5173/atur-ulang-sandi?token=${resetToken}`;
+    await sendResetPasswordEmail(email, resetLink);
+    console.log(`[EMAIL] ✅ Reset link sent to: ${email}`);
 
-    return { message: 'Reset link generated successfully.', resetLink };
+    return { message: 'Link atur ulang kata sandi telah dikirim ke email Anda.', resetLink };
 };
 
 /**

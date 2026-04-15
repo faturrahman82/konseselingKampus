@@ -3,19 +3,23 @@ const { AppError } = require('../utils/error.handler');
 
 /**
  * Service: Generate Laporan Admin
- * Mengambil data appointments COMPLETED berdasarkan rentang tanggal
+ * Mengambil semua appointments berdasarkan rentang tanggal
  */
 const generateReport = async ({ startDate, endDate }) => {
     if (!startDate || !endDate) {
         throw new AppError('startDate and endDate are required.', 400);
     }
 
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
     const appointments = await prisma.appointment.findMany({
         where: {
-            status: 'COMPLETED',
             appointmentDate: {
-                gte: new Date(startDate),
-                lte: new Date(endDate),
+                gte: start,
+                lte: end,
             },
         },
         include: {
@@ -32,29 +36,39 @@ const generateReport = async ({ startDate, endDate }) => {
         orderBy: { appointmentDate: 'asc' },
     });
 
-    // Ringkasan statistik
+    // Hitung ringkasan
+    const completedSessions = appointments.filter(a => a.status === 'COMPLETED').length;
+    const cancelledSessions = appointments.filter(a => a.status === 'CANCELLED' || a.status === 'REJECTED').length;
+    const uniqueStudents = new Set(appointments.map(a => a.studentId)).size;
+    const uniqueCounselors = new Set(appointments.map(a => a.counselorId)).size;
+
     const summary = {
-        totalSessions: appointments.length,
-        dateRange: { startDate, endDate },
-        byType: {
-            online: appointments.filter((a) => a.counselingType === 'online').length,
-            offline: appointments.filter((a) => a.counselingType === 'offline').length,
-        },
-        byCounselor: {},
-        byFaculty: {},
+        totalAppointments: appointments.length,
+        completedSessions,
+        cancelledSessions,
+        uniqueStudents,
+        uniqueCounselors,
     };
 
-    appointments.forEach((a) => {
-        // Hitung per konselor
-        const counselorName = a.counselor.fullName;
-        summary.byCounselor[counselorName] = (summary.byCounselor[counselorName] || 0) + 1;
+    // Map ke format yang dibutuhkan frontend
+    const appointmentList = appointments.map(a => ({
+        id: a.id,
+        studentName: a.student?.fullName || '-',
+        studentNim: a.student?.nim || '-',
+        studentFaculty: a.student?.faculty || '-',
+        studentMajor: a.student?.major || '-',
+        counselorName: a.counselor?.fullName || '-',
+        counselorSpecialization: a.counselor?.specialization || '-',
+        appointmentDate: a.appointmentDate,
+        startTime: a.startTime,
+        endTime: a.endTime,
+        status: a.status,
+        counselingType: a.counselingType || '-',
+        diagnosisCategory: a.clinicalNote?.diagnosisCategory || '-',
+        actionPlan: a.clinicalNote?.actionPlan || '-',
+    }));
 
-        // Hitung per fakultas
-        const faculty = a.student.faculty;
-        summary.byFaculty[faculty] = (summary.byFaculty[faculty] || 0) + 1;
-    });
-
-    return { summary, appointments };
+    return { summary, appointments: appointmentList };
 };
 
 module.exports = { generateReport };

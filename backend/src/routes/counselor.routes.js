@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const counselorController = require('../controllers/counselor.controller');
 const { verifyToken, requireRole } = require('../middlewares/auth.middleware');
+const { avatarUpload } = require('../middlewares/upload.middleware');
 
 /**
  * @swagger
@@ -10,40 +11,8 @@ const { verifyToken, requireRole } = require('../middlewares/auth.middleware');
  *   description: Manajemen profil konselor (Self)
  */
 
-/**
- * @swagger
- * /api/counselors/me:
- *   get:
- *     summary: Ambil profil saya (Counselor Only)
- *     tags: [Counselor]
- *     security:
- *       - bearerAuth: []
- */
 router.get('/me', verifyToken, requireRole(['counselor']), counselorController.getMyProfile);
-
-/**
- * @swagger
- * /api/counselors/me:
- *   patch:
- *     summary: Update profil saya (Counselor Only)
- *     tags: [Counselor]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               fullName:
- *                 type: string
- *               specialization:
- *                 type: string
- *               bioDescription:
- *                 type: string
- *               avatarUrl:
- *                 type: string
- */
 router.patch('/me', verifyToken, requireRole(['counselor']), counselorController.updateProfile);
+router.post('/avatar', verifyToken, requireRole(['counselor']), avatarUpload.single('avatar'), counselorController.uploadAvatar);
 
 module.exports = router;

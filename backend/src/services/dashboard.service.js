@@ -32,11 +32,14 @@ const getStudentDashboard = async (userId) => {
     });
 
     // 2. Ambil Jadwal Mendatang (1 terdekat yang APPROVED)
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
     const upcomingAppointment = await prisma.appointment.findFirst({
         where: { 
             studentId: student.id,
             status: 'APPROVED',
-            appointmentDate: { gte: new Date() }
+            appointmentDate: { gte: startOfToday }
         },
         include: {
             counselor: { select: { fullName: true, specialization: true, avatarUrl: true } }
@@ -158,12 +161,24 @@ const getCounselorDashboard = async (userId) => {
         take: 5
     });
 
+    // 4. Hitung total jam konseling dari sesi COMPLETED
+    const completedAppts = await prisma.appointment.findMany({
+        where: { counselorId: counselor.id, status: 'COMPLETED' },
+        select: { startTime: true, endTime: true }
+    });
+    const counselingHours = Math.round(completedAppts.reduce((sum, a) => {
+        try {
+            const diff = (new Date(a.endTime).getTime() - new Date(a.startTime).getTime()) / (1000 * 60 * 60);
+            return sum + (diff > 0 ? diff : 1); // fallback 1 jam per sesi
+        } catch { return sum + 1; }
+    }, 0));
+
     return {
         metrics: {
             pendingRequests: pendingCount,
             sessionsToday: sessionsToday,
             totalStudents: uniqueStudents.length,
-            counselingHours: counselor.experienceYears * 100 // Simulasi data
+            counselingHours
         },
         pendingRequests,
         todaySchedule,

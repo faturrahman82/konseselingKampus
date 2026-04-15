@@ -1,6 +1,7 @@
 const prisma = require('../config/database');
 const { AppError } = require('../utils/error.handler');
 const notificationService = require('./notification.service');
+const emailService = require('./email.service');
 
 /**
  * Service: Booking Appointment (Student)
@@ -74,7 +75,7 @@ const createAppointment = async (studentUserId, { scheduleId, counselingType, to
 /**
  * Service: Update Status Appointment (Counselor)
  */
-const updateAppointmentStatus = async (counselorUserId, appointmentId, { status }) => {
+const updateAppointmentStatus = async (counselorUserId, appointmentId, { status, meetingLink }) => {
     const counselor = await prisma.counselor.findUnique({
         where: { userId: counselorUserId },
     });
@@ -103,9 +104,15 @@ const updateAppointmentStatus = async (counselorUserId, appointmentId, { status 
         throw new AppError(`Cannot change status from ${appointment.status} to ${status}.`, 400);
     }
 
+    // Build update data — include meetingLink if provided
+    const updateData = { status };
+    if (meetingLink !== undefined && meetingLink !== null) {
+        updateData.meetingLink = meetingLink.trim() || null;
+    }
+
     const updated = await prisma.appointment.update({
         where: { id: appointmentId },
-        data: { status },
+        data: updateData,
     });
 
     // Kirim notifikasi ke Mahasiswa
@@ -119,6 +126,24 @@ const updateAppointmentStatus = async (counselorUserId, appointmentId, { status 
     }
 
     await notificationService.createNotification(appointment.student.userId, notifTitle, notifMessage);
+
+    // Kirim email ke mahasiswa (non-blocking)
+    if (status === 'APPROVED' || status === 'REJECTED') {
+        const studentUser = await prisma.user.findUnique({
+            where: { id: appointment.student.userId },
+            select: { email: true }
+        });
+        if (studentUser?.email) {
+            emailService.sendAppointmentEmail(studentUser.email, status, {
+                studentName: appointment.student.fullName,
+                counselorName: appointment.counselor.fullName,
+                appointmentDate: appointment.appointmentDate,
+                startTime: appointment.startTime,
+                endTime: appointment.endTime,
+                meetingLink: updateData.meetingLink || appointment.meetingLink || null,
+            }).catch(err => console.error('[EMAIL ERROR]', err.message));
+        }
+    }
 
     // Jika REJECTED atau CANCELLED, buka kembali slot jadwal
     if (status === 'REJECTED' || status === 'CANCELLED') {
@@ -236,6 +261,32 @@ const addClinicalNote = async (counselorUserId, appointmentId, { diagnosisCatego
 };
 
 /**
+ * Service: Update Meeting Link (Counselor, untuk appointment APPROVED)
+ */
+const updateMeetingLink = async (counselorUserId, appointmentId, meetingLink) => {
+    const counselor = await prisma.counselor.findUnique({
+        where: { userId: counselorUserId },
+    });
+    if (!counselor) throw new AppError('Counselor profile not found.', 404);
+
+    const appointment = await prisma.appointment.findFirst({
+        where: { id: appointmentId, counselorId: counselor.id },
+    });
+    if (!appointment) throw new AppError('Appointment not found or not authorized.', 404);
+    if (appointment.status !== 'APPROVED') {
+        throw new AppError('Meeting link can only be updated for APPROVED appointments.', 400);
+    }
+    if (!meetingLink || !meetingLink.trim().startsWith('http')) {
+        throw new AppError('URL meeting link tidak valid.', 400);
+    }
+
+    return await prisma.appointment.update({
+        where: { id: appointmentId },
+        data: { meetingLink: meetingLink.trim() },
+    });
+};
+
+/**
  * Service: Daftar Mahasiswa yang pernah ditangani (Counselor View)
  */
 const getMyStudents = async (counselorUserId) => {
@@ -247,25 +298,50 @@ const getMyStudents = async (counselorUserId) => {
         throw new AppError('Counselor profile not found.', 404);
     }
 
-    // Ambil semua mahasiswa yang pernah punya appointment dengan konselor ini
+    // Ambil semua appointment konselor ini (urut dari terbaru)
     const appointments = await prisma.appointment.findMany({
         where: { counselorId: counselor.id },
-        select: {
+        include: {
             student: {
-                select: { id: true, fullName: true, major: true, avatarUrl: true, wellbeingScore: true }
+                select: {
+                    id: true,
+                    fullName: true,
+                    nim: true,
+                    major: true,
+                    faculty: true,
+                    avatarUrl: true,
+                }
             }
         },
-        distinct: ['studentId']
+        orderBy: { createdAt: 'desc' }
     });
 
-    // Map data untuk FE dan tambahkan flag "isAtRisk"
-    const results = appointments.map(a => ({
-        ...a.student,
-        isAtRisk: a.student.wellbeingScore < 40
-    }));
+    // Kelompokkan per mahasiswa: hitung total sesi & ambil status terakhir
+    const studentMap = new Map();
+    for (const appt of appointments) {
+        const s = appt.student;
+        if (!studentMap.has(s.id)) {
+            studentMap.set(s.id, {
+                id: s.id,
+                fullName: s.fullName,
+                nim: s.nim || '-',
+                major: s.major || '-',
+                faculty: s.faculty || '-',
+                avatarUrl: s.avatarUrl,
+                totalSessions: 0,
+                lastSessionStatus: appt.status,  // status dari appointment terbaru
+            });
+        }
+        studentMap.get(s.id).totalSessions++;
+    }
 
-    // Urutkan: Yang "isAtRisk" naik ke atas
-    return results.sort((a, b) => (b.isAtRisk ? 1 : 0) - (a.isAtRisk ? 1 : 0));
+    const results = Array.from(studentMap.values());
+
+    // Urutkan: sesi aktif (PENDING/APPROVED) naik ke atas
+    return results.sort((a, b) => {
+        const isActive = (s) => s === 'PENDING' || s === 'APPROVED';
+        return (isActive(b.lastSessionStatus) ? 1 : 0) - (isActive(a.lastSessionStatus) ? 1 : 0);
+    });
 };
 
 /**
@@ -360,4 +436,5 @@ module.exports = {
     getMyStudents,
     getStudentDetailForCounselor,
     cancelAppointmentByStudent,
+    updateMeetingLink,
 };

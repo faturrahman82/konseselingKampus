@@ -1,37 +1,70 @@
-import axios from 'axios'
+import api from '@/api/axios'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useNavigate, Link } from 'react-router-dom'
 import { AuthLayout } from '@/layouts/AuthLayout'
 import { LoginForm } from '@/components/organisms/LoginForm'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 
 export default function Login() {
   const { setAuth } = useAuthStore()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
 
+  // Cek apakah user redirect ke sini karena sesi expired
+  useEffect(() => {
+    if (sessionStorage.getItem('session_expired') === 'true') {
+      toast.error('Sesi Anda telah berakhir, silakan login kembali.')
+      sessionStorage.removeItem('session_expired')
+    }
+  }, [])
+
   const handleLogin = async (data: any) => {
     setLoading(true)
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', data)
-      setAuth(response.data.user, response.data.token)
-      navigate('/')
+      // Backend response: { success, message, data: { token, user } }
+      const response = await api.post('/auth/login', data)
+      const { token, user } = response.data.data
+
+      // Simpan auth dengan name dari profile.fullName
+      setAuth({
+        ...user,
+        name: user.profile?.fullName || user.username,
+      }, token)
+
+      // Redirect berdasarkan role (backend pakai lowercase)
+      const role = user.role
+      if (role === 'counselor') {
+        navigate('/konselor/dasbor')
+      } else if (role === 'admin') {
+        navigate('/admin')
+      } else {
+        // Mahasiswa baru (NIM belum diisi) → wajib lengkapi profil dulu
+        const isProfileComplete = !!user.profile?.nim
+        navigate(isProfileComplete ? '/mahasiswa/dasbor' : '/lengkapi-profil')
+      }
+
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Login failed')
+      toast.error(error.response?.data?.message || 'Login gagal. Periksa email dan password Anda.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <AuthLayout title="Welcome back" subtitle="Login to your account">
+    <AuthLayout
+      title="Selamat Datang Kembali"
+      subtitle="Silakan masuk ke akun Anda untuk melanjutkan."
+      footer={
+        <span>
+          Belum punya akun?{' '}
+          <Link to="/register" className="font-semibold text-primary hover:underline">
+            Daftar sekarang
+          </Link>
+        </span>
+      }
+    >
       <LoginForm onSubmit={handleLogin} isLoading={loading} />
-      <p className="text-center text-sm text-muted-foreground mt-4">
-        Don't have an account?{' '}
-        <Link to="/register" className="text-primary hover:underline">
-          Register
-        </Link>
-      </p>
     </AuthLayout>
   )
 }

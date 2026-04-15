@@ -49,9 +49,13 @@ const createSchedule = async (counselorUserId, { availableDate, startTime, endTi
  */
 const getAvailableSchedules = async ({ search, specialization, dateFilter }) => {
     // Build filter query
+    // Gunakan awal hari (midnight) agar slot HARI INI tetap tampil
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     const where = {
         isBooked: false,
-        availableDate: { gte: new Date() } // Hanya hari ini ke depan
+        availableDate: { gte: today } // Hari ini (dari midnight) ke depan
     };
 
     if (specialization) {

@@ -4,8 +4,10 @@ import { persist } from 'zustand/middleware';
 interface User {
   id: string;
   email: string;
-  name?: string;
-  role: string;
+  username: string;
+  name?: string;       // fullName dari profile
+  role: string;        // 'student' | 'counselor' | 'admin' (lowercase dari BE)
+  profile?: any;
 }
 
 interface AuthState {
