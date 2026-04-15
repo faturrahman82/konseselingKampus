@@ -28,6 +28,10 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const isProd = process.env.NODE_ENV === 'production';
 
+// Ignore favicon requests to clean up logs
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+app.get('/favicon.png', (req, res) => res.status(204).end());
+
 // ==================== SECURITY MIDDLEWARE ====================
 
 // Helmet: Set security HTTP headers
