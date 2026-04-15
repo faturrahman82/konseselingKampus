@@ -1,17 +1,14 @@
 const { PrismaClient } = require('@prisma/client');
+const { withAccelerate } = require('@prisma/extension-accelerate');
 
-let prisma;
+const globalForPrisma = globalThis;
 
-if (process.env.NODE_ENV === 'production') {
-    prisma = new PrismaClient();
-} else {
-    // Di development, gunakan global object agar tidak membuat koneksi baru setiap hot-reload
-    if (!global.prisma) {
-        global.prisma = new PrismaClient({
-            log: ['query', 'info', 'warn', 'error'],
-        });
-    }
-    prisma = global.prisma;
+const prisma =
+    globalForPrisma.prisma ||
+    new PrismaClient().$extends(withAccelerate());
+
+if (process.env.NODE_ENV !== 'production') {
+    globalForPrisma.prisma = prisma;
 }
 
 module.exports = prisma;

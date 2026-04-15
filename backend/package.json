@@ -6,8 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
-    "build": "npx prisma generate && npx prisma db push --accept-data-loss",
-    "postinstall": "prisma generate",
+    "build": "npx prisma generate --no-engine && npx prisma db push --accept-data-loss",
+    "postinstall": "prisma generate --no-engine",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -18,6 +18,7 @@
     "@google/genai": "^1.48.0",
     "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^5.10.0",
+    "@prisma/extension-accelerate": "^2.0.2",
     "bcryptjs": "^3.0.3",
     "compression": "^1.8.1",
     "cors": "^2.8.6",
