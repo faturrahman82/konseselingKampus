@@ -45,7 +45,7 @@ app.use(compression());
 // CORS: Di production hanya izinkan dari domain FE
 const allowedOrigins = isProd
     ? (process.env.FRONTEND_URL || 'http://localhost:5173').split(',')
-    : ['http://localhost:5173', 'http://localhost:3000'];
+    : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5000'];
 
 app.use(cors({
     origin: (origin, callback) => {
