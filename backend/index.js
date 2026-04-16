@@ -121,7 +121,7 @@ app.get('/', (req, res) => {
 app.use(errorHandler);
 
 // ==================== START SERVER ====================
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+if (!process.env.VERCEL) {
     app.listen(PORT, () => {
         console.log(`\n🚀 Server running on http://localhost:${PORT}`);
         if (!isProd) console.log(`📚 API Docs: http://localhost:${PORT}/api-docs\n`);
