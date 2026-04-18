@@ -1,4 +1,2 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
-
-module.exports = prisma;
+// Keep a single Prisma client implementation across the app.
+module.exports = require('./database');
