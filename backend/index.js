@@ -68,36 +68,8 @@ app.use(helmet({
 app.use(compression());
 
 // CORS: Production dikunci via env, tapi tetap support domain Vercel (preview/prod).
-const allowedOrigins = isProd
-    ? (process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || '')
-        .split(',')
-        .map(s => s.trim())
-        .filter(Boolean)
-    : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5000'];
-
-function isAllowedOrigin(origin) {
-    if (!origin) return true; // non-browser / same-origin
-    
-    // Always permit local development origins to connect to the remote backend
-    const localDevOrigins = ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5000', 'http://127.0.0.1:5173'];
-    if (localDevOrigins.includes(origin)) return true;
-
-    if (!isProd) return allowedOrigins.includes(origin);
-    if (allowedOrigins.includes(origin)) return true;
-
-    // Allow Vercel-hosted frontends (Preview + Production) by default.
-    // Keep this intentionally narrow: only https and only *.vercel.app hosts.
-    try {
-        const { protocol, hostname } = new URL(origin);
-        if (protocol === 'https:' && hostname.endsWith('.vercel.app')) return true;
-    } catch (_) {
-        // ignore invalid Origin header
-    }
-    return false;
-}
-
 app.use(cors({
-    origin: (origin, callback) => callback(null, isAllowedOrigin(origin)),
+    origin: true, // Izinkan semua origin (frontend lokal & vercel app)
     credentials: true,
 }));
 
