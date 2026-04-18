@@ -3,12 +3,6 @@ const router = express.Router();
 const scheduleController = require('../controllers/schedule.controller');
 const { verifyToken, requireRole } = require('../middlewares/auth.middleware');
 
-router.get('/', (req, res, next) => {
-    // Keep existing GET / (available schedules) behavior via controller.
-    // If client hits base path without query, this is still the correct endpoint.
-    return scheduleController.getAvailableSchedules(req, res, next);
-});
-
 /**
  * @swagger
  * tags:
@@ -59,7 +53,7 @@ router.post('/', verifyToken, requireRole(['counselor']), scheduleController.cre
  *       200:
  *         description: Daftar jadwal tersedia
  */
-// GET / already handled above to keep base path stable.
+router.get('/', scheduleController.getAvailableSchedules);
 
 /**
  * @swagger

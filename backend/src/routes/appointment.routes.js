@@ -3,24 +3,6 @@ const router = express.Router();
 const appointmentController = require('../controllers/appointment.controller');
 const { verifyToken, requireRole } = require('../middlewares/auth.middleware');
 
-router.get('/', verifyToken, (req, res) => {
-    res.json({
-        success: true,
-        message: 'Appointments routes OK',
-        endpoints: [
-            'POST / (student)',
-            'GET /student (student)',
-            'GET /counselor (counselor)',
-            'GET /my-students (counselor)',
-            'GET /student/:studentId (counselor)',
-            'PUT /:id/status (counselor)',
-            'POST /:id/notes (counselor)',
-            'PATCH /:id/meeting-link (counselor)',
-            'DELETE /:id (student)',
-        ],
-    });
-});
-
 /**
  * @swagger
  * tags:

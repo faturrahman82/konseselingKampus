@@ -3,21 +3,6 @@ const router = express.Router();
 const authController = require('../controllers/auth.controller');
 const { verifyToken } = require('../middlewares/auth.middleware');
 
-router.get('/', (_req, res) => {
-    res.json({
-        success: true,
-        message: 'Auth routes OK',
-        endpoints: [
-            'POST /register',
-            'POST /login',
-            'PATCH /complete-profile',
-            'GET /me',
-            'POST /forgot-password',
-            'POST /reset-password',
-        ],
-    });
-});
-
 /**
  * @swagger
  * tags:

@@ -3,21 +3,6 @@ const router = express.Router();
 const adminController = require('../controllers/admin.controller');
 const { verifyToken, requireRole } = require('../middlewares/auth.middleware');
 
-router.get('/', verifyToken, requireRole(['admin']), (_req, res) => {
-    res.json({
-        success: true,
-        message: 'Admin routes OK',
-        endpoints: [
-            'POST /counselors',
-            'PATCH /counselors/:id',
-            'DELETE /counselors/:id',
-            'GET /settings',
-            'PATCH /settings',
-            'GET /reports/analytics',
-        ],
-    });
-});
-
 /**
  * @swagger
  * tags:

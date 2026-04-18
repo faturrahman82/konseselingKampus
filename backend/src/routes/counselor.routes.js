@@ -4,14 +4,6 @@ const counselorController = require('../controllers/counselor.controller');
 const { verifyToken, requireRole } = require('../middlewares/auth.middleware');
 const { avatarUpload } = require('../middlewares/upload.middleware');
 
-router.get('/', verifyToken, requireRole(['counselor']), (_req, res) => {
-    res.json({
-        success: true,
-        message: 'Counselor routes OK',
-        endpoints: ['GET /me', 'PATCH /me', 'POST /avatar'],
-    });
-});
-
 /**
  * @swagger
  * tags:

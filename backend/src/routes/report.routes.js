@@ -3,14 +3,6 @@ const router = express.Router();
 const reportController = require('../controllers/report.controller');
 const { verifyToken, requireRole } = require('../middlewares/auth.middleware');
 
-router.get('/', verifyToken, requireRole(['admin']), (_req, res) => {
-    res.json({
-        success: true,
-        message: 'Reports routes OK',
-        endpoints: ['GET /generate?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD'],
-    });
-});
-
 /**
  * @swagger
  * tags:
