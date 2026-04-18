@@ -145,6 +145,16 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/articles', articleRoutes);
 app.use('/api/chatbot', chatbotLimiter, chatbotRoutes);
 
+// Aliases to tolerate singular/plural mismatches (keeps older FE/manual tests working)
+app.use('/api/schedule', scheduleRoutes);
+app.use('/api/appointment', appointmentRoutes);
+app.use('/api/report', reportRoutes);
+app.use('/api/notification', notificationRoutes);
+app.use('/api/counselor', counselorRoutes);
+app.use('/api/student', studentRoutes);
+app.use('/api/review', reviewRoutes);
+app.use('/api/article', articleRoutes);
+
 // API Health Check (handy when everything is under /api on Vercel)
 app.get('/api', (req, res) => {
     res.json({
