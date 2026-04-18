@@ -3,7 +3,7 @@ const { PrismaClient } = require('@prisma/client');
 let prismaInstance;
 
 function createPrisma() {
-    const isProd = process.env.NODE_ENV === 'production';
+    const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL;
 
     if (isProd) {
         // Instead of throwing at boot-time (which kills ALL routes on Vercel),
