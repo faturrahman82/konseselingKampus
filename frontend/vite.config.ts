@@ -12,8 +12,6 @@ export default defineConfig({
   },
   build: {
     target: 'es2020',
-    // Hapus console.log & debugger di production
-    minify: 'esbuild',
     rollupOptions: {
       output: {
         // Pisahkan vendor dan page chunks untuk caching lebih baik
@@ -34,8 +32,4 @@ export default defineConfig({
       },
     },
   },
-  esbuild: {
-    // Hapus console & debugger di production build
-    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
-  } as any,
 })
