@@ -36,6 +36,6 @@ export default defineConfig({
   },
   esbuild: {
     // Hapus console & debugger di production build
-    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
+    ...(process.env.NODE_ENV === 'production' && { drop: ['console', 'debugger'] as any }),
   },
 })
