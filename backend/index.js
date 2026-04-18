@@ -16,42 +16,36 @@ const rateLimit = require('express-rate-limit');
 const setupSwagger = require('./src/config/swagger');
 const { errorHandler } = require('./src/utils/error.handler');
 
-function safeRequireRoute(modulePath) {
-    try {
-        const resolved = path.resolve(__dirname, modulePath);
-        // eslint-disable-next-line import/no-dynamic-require, global-require
-        return require(resolved);
-    } catch (err) {
-        console.error(`[BOOT] Failed to load route module: ${modulePath}`);
-        console.error(err);
-        const router = express.Router();
-        router.use((_req, res) => {
-            res.status(500).json({
-                success: false,
-                message: `Route module failed to load: ${modulePath}`,
-                error: err.message,
-                ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
-            });
+function routeLoadFailureRouter(modulePath, err) {
+    console.error(`[BOOT] Failed to load route module: ${modulePath}`);
+    console.error(err);
+    const router = express.Router();
+    router.use((_req, res) => {
+        res.status(500).json({
+            success: false,
+            message: `Route module failed to load: ${modulePath}`,
+            error: err.message,
+            ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
         });
-        return router;
-    }
+    });
+    return router;
 }
 
 // Import Routes (wrapped so a single bad module doesn't crash serverless boot)
-const authRoutes = safeRequireRoute('src/routes/auth.routes.js');
-const scheduleRoutes = safeRequireRoute('src/routes/schedule.routes.js');
-const appointmentRoutes = safeRequireRoute('src/routes/appointment.routes.js');
-const reportRoutes = safeRequireRoute('src/routes/report.routes.js');
-const wellbeingRoutes = safeRequireRoute('src/routes/wellbeing.routes.js');
-const dashboardRoutes = safeRequireRoute('src/routes/dashboard.routes.js');
-const adminRoutes = safeRequireRoute('src/routes/admin.routes.js');
-const notificationRoutes = safeRequireRoute('src/routes/notification.routes.js');
-const chatRoutes = safeRequireRoute('src/routes/chat.routes.js');
-const counselorRoutes = safeRequireRoute('src/routes/counselor.routes.js');
-const studentRoutes = safeRequireRoute('src/routes/student.routes.js');
-const reviewRoutes = safeRequireRoute('src/routes/review.routes.js');
-const articleRoutes = safeRequireRoute('src/routes/article.routes.js');
-const chatbotRoutes = safeRequireRoute('src/routes/chatbot.routes.js');
+let authRoutes; try { authRoutes = require('./src/routes/auth.routes'); } catch (e) { authRoutes = routeLoadFailureRouter('./src/routes/auth.routes', e); }
+let scheduleRoutes; try { scheduleRoutes = require('./src/routes/schedule.routes'); } catch (e) { scheduleRoutes = routeLoadFailureRouter('./src/routes/schedule.routes', e); }
+let appointmentRoutes; try { appointmentRoutes = require('./src/routes/appointment.routes'); } catch (e) { appointmentRoutes = routeLoadFailureRouter('./src/routes/appointment.routes', e); }
+let reportRoutes; try { reportRoutes = require('./src/routes/report.routes'); } catch (e) { reportRoutes = routeLoadFailureRouter('./src/routes/report.routes', e); }
+let wellbeingRoutes; try { wellbeingRoutes = require('./src/routes/wellbeing.routes'); } catch (e) { wellbeingRoutes = routeLoadFailureRouter('./src/routes/wellbeing.routes', e); }
+let dashboardRoutes; try { dashboardRoutes = require('./src/routes/dashboard.routes'); } catch (e) { dashboardRoutes = routeLoadFailureRouter('./src/routes/dashboard.routes', e); }
+let adminRoutes; try { adminRoutes = require('./src/routes/admin.routes'); } catch (e) { adminRoutes = routeLoadFailureRouter('./src/routes/admin.routes', e); }
+let notificationRoutes; try { notificationRoutes = require('./src/routes/notification.routes'); } catch (e) { notificationRoutes = routeLoadFailureRouter('./src/routes/notification.routes', e); }
+let chatRoutes; try { chatRoutes = require('./src/routes/chat.routes'); } catch (e) { chatRoutes = routeLoadFailureRouter('./src/routes/chat.routes', e); }
+let counselorRoutes; try { counselorRoutes = require('./src/routes/counselor.routes'); } catch (e) { counselorRoutes = routeLoadFailureRouter('./src/routes/counselor.routes', e); }
+let studentRoutes; try { studentRoutes = require('./src/routes/student.routes'); } catch (e) { studentRoutes = routeLoadFailureRouter('./src/routes/student.routes', e); }
+let reviewRoutes; try { reviewRoutes = require('./src/routes/review.routes'); } catch (e) { reviewRoutes = routeLoadFailureRouter('./src/routes/review.routes', e); }
+let articleRoutes; try { articleRoutes = require('./src/routes/article.routes'); } catch (e) { articleRoutes = routeLoadFailureRouter('./src/routes/article.routes', e); }
+let chatbotRoutes; try { chatbotRoutes = require('./src/routes/chatbot.routes'); } catch (e) { chatbotRoutes = routeLoadFailureRouter('./src/routes/chatbot.routes', e); }
 
 const app = express();
 app.set('trust proxy', 1);
