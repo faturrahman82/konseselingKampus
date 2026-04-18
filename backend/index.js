@@ -18,8 +18,9 @@ const { errorHandler } = require('./src/utils/error.handler');
 
 function safeRequireRoute(modulePath) {
     try {
+        const resolved = path.resolve(__dirname, modulePath);
         // eslint-disable-next-line import/no-dynamic-require, global-require
-        return require(modulePath);
+        return require(resolved);
     } catch (err) {
         console.error(`[BOOT] Failed to load route module: ${modulePath}`);
         console.error(err);
@@ -29,7 +30,7 @@ function safeRequireRoute(modulePath) {
                 success: false,
                 message: `Route module failed to load: ${modulePath}`,
                 error: err.message,
-                stack: err.stack,
+                ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
             });
         });
         return router;
@@ -37,20 +38,20 @@ function safeRequireRoute(modulePath) {
 }
 
 // Import Routes (wrapped so a single bad module doesn't crash serverless boot)
-const authRoutes = safeRequireRoute('./src/routes/auth.routes');
-const scheduleRoutes = safeRequireRoute('./src/routes/schedule.routes');
-const appointmentRoutes = safeRequireRoute('./src/routes/appointment.routes');
-const reportRoutes = safeRequireRoute('./src/routes/report.routes');
-const wellbeingRoutes = safeRequireRoute('./src/routes/wellbeing.routes');
-const dashboardRoutes = safeRequireRoute('./src/routes/dashboard.routes');
-const adminRoutes = safeRequireRoute('./src/routes/admin.routes');
-const notificationRoutes = safeRequireRoute('./src/routes/notification.routes');
-const chatRoutes = safeRequireRoute('./src/routes/chat.routes');
-const counselorRoutes = safeRequireRoute('./src/routes/counselor.routes');
-const studentRoutes = safeRequireRoute('./src/routes/student.routes');
-const reviewRoutes = safeRequireRoute('./src/routes/review.routes');
-const articleRoutes = safeRequireRoute('./src/routes/article.routes');
-const chatbotRoutes = safeRequireRoute('./src/routes/chatbot.routes');
+const authRoutes = safeRequireRoute('src/routes/auth.routes.js');
+const scheduleRoutes = safeRequireRoute('src/routes/schedule.routes.js');
+const appointmentRoutes = safeRequireRoute('src/routes/appointment.routes.js');
+const reportRoutes = safeRequireRoute('src/routes/report.routes.js');
+const wellbeingRoutes = safeRequireRoute('src/routes/wellbeing.routes.js');
+const dashboardRoutes = safeRequireRoute('src/routes/dashboard.routes.js');
+const adminRoutes = safeRequireRoute('src/routes/admin.routes.js');
+const notificationRoutes = safeRequireRoute('src/routes/notification.routes.js');
+const chatRoutes = safeRequireRoute('src/routes/chat.routes.js');
+const counselorRoutes = safeRequireRoute('src/routes/counselor.routes.js');
+const studentRoutes = safeRequireRoute('src/routes/student.routes.js');
+const reviewRoutes = safeRequireRoute('src/routes/review.routes.js');
+const articleRoutes = safeRequireRoute('src/routes/article.routes.js');
+const chatbotRoutes = safeRequireRoute('src/routes/chatbot.routes.js');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -150,6 +151,16 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/articles', articleRoutes);
 app.use('/api/chatbot', chatbotLimiter, chatbotRoutes);
 
+// API Health Check (handy when everything is under /api on Vercel)
+app.get('/api', (req, res) => {
+    res.json({
+        success: true,
+        message: 'UniCounsel API is running',
+        version: '1.0.0',
+        env: isProd ? 'production' : 'development',
+    });
+});
+
 // Health Check
 app.get('/', (req, res) => {
     res.json({
@@ -157,6 +168,15 @@ app.get('/', (req, res) => {
         message: 'UniCounsel API is running',
         version: '1.0.0',
         env: isProd ? 'production' : 'development',
+    });
+});
+
+// 404 for unknown API routes (avoid returning HTML / generic crash pages)
+app.use('/api', (req, res) => {
+    res.status(404).json({
+        success: false,
+        message: 'API route not found',
+        path: req.originalUrl,
     });
 });
 
