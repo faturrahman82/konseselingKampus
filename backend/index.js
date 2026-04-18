@@ -77,8 +77,12 @@ const allowedOrigins = isProd
 
 function isAllowedOrigin(origin) {
     if (!origin) return true; // non-browser / same-origin
-    if (!isProd) return allowedOrigins.includes(origin);
+    
+    // Always permit local development origins to connect to the remote backend
+    const localDevOrigins = ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5000', 'http://127.0.0.1:5173'];
+    if (localDevOrigins.includes(origin)) return true;
 
+    if (!isProd) return allowedOrigins.includes(origin);
     if (allowedOrigins.includes(origin)) return true;
 
     // Allow Vercel-hosted frontends (Preview + Production) by default.
