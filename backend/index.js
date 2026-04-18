@@ -122,8 +122,8 @@ app.use(errorHandler);
 
 // ==================== START SERVER ====================
 if (!process.env.VERCEL) {
-    app.listen(PORT, () => {
-        console.log(`\n🚀 Server running on http://localhost:${PORT}`);
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`\n🚀 Server running on http://localhost:${PORT} and Accessible over network!`);
         if (!isProd) console.log(`📚 API Docs: http://localhost:${PORT}/api-docs\n`);
     });
 }
