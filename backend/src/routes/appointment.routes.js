@@ -10,6 +10,26 @@ const { verifyToken, requireRole } = require('../middlewares/auth.middleware');
  *   description: Manajemen booking konsultasi
  */
 
+// Simple ping for browser/manual check
+router.get('/', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Appointments routes are available.',
+        endpoints: [
+            'POST /api/appointments (student)',
+            'GET /api/appointments/student (student)',
+            'GET /api/appointments/counselor (counselor)',
+            'GET /api/appointments/my-students (counselor)',
+            'GET /api/appointments/student/:studentId (counselor)',
+            'PUT /api/appointments/:id/status (counselor)',
+            'POST /api/appointments/:id/notes (counselor)',
+            'PATCH /api/appointments/:id/meeting-link (counselor)',
+            'DELETE /api/appointments/:id (student)',
+        ],
+        note: 'Most endpoints require Authorization: Bearer <token>.',
+    });
+});
+
 /**
  * @swagger
  * /api/appointments:

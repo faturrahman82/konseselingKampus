@@ -10,6 +10,15 @@ const { verifyToken, requireRole } = require('../middlewares/auth.middleware');
  *   description: Pelaporan data admin
  */
 
+router.get('/', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Reports routes are available.',
+        endpoints: ['GET /api/reports/generate?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD (admin)'],
+        note: 'Endpoint requires Authorization: Bearer <token>.',
+    });
+});
+
 /**
  * @swagger
  * /api/reports/generate:

@@ -10,6 +10,19 @@ const { verifyToken, requireRole } = require('../middlewares/auth.middleware');
  *   description: API untuk mengambil semua data ringkasan dashboard sesuai role
  */
 
+router.get('/', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Dashboard routes are available.',
+        endpoints: [
+            'GET /api/dashboard/student (student)',
+            'GET /api/dashboard/counselor (counselor)',
+            'GET /api/dashboard/admin (admin)',
+        ],
+        note: 'All endpoints require Authorization: Bearer <token>.',
+    });
+});
+
 /**
  * @swagger
  * /api/dashboard/student:

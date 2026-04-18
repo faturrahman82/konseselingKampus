@@ -10,6 +10,20 @@ const { verifyToken } = require('../middlewares/auth.middleware');
  *   description: Sistem chatting antar pengguna
  */
 
+router.get('/', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Chat routes are available.',
+        endpoints: [
+            'GET /api/chat/inbox',
+            'GET /api/chat/:otherUserId',
+            'POST /api/chat',
+            'PATCH /api/chat/:otherUserId/read',
+        ],
+        note: 'All endpoints require Authorization: Bearer <token>.',
+    });
+});
+
 /**
  * @swagger
  * /api/chat/inbox:

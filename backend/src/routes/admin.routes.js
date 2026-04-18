@@ -10,6 +10,22 @@ const { verifyToken, requireRole } = require('../middlewares/auth.middleware');
  *   description: Manajemen pengguna dan sistem oleh Admin
  */
 
+router.get('/', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Admin routes are available.',
+        endpoints: [
+            'POST /api/admin/counselors (admin)',
+            'PATCH /api/admin/counselors/:id (admin)',
+            'DELETE /api/admin/counselors/:id (admin)',
+            'GET /api/admin/settings (admin)',
+            'PATCH /api/admin/settings (admin)',
+            'GET /api/admin/reports/analytics (admin)',
+        ],
+        note: 'All endpoints require Authorization: Bearer <token>.',
+    });
+});
+
 /**
  * @swagger
  * /api/admin/counselors:

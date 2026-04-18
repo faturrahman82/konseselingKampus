@@ -10,6 +10,19 @@ const { verifyToken, requireRole } = require('../middlewares/auth.middleware');
  *   description: Fitur Skor Kesejahteraan & Mood Tracker
  */
 
+router.get('/', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Wellbeing routes are available.',
+        endpoints: [
+            'GET /api/wellbeing/status (student)',
+            'POST /api/wellbeing/check-in (student)',
+            'GET /api/wellbeing/history (student)',
+        ],
+        note: 'All endpoints require Authorization: Bearer <token>.',
+    });
+});
+
 /**
  * @swagger
  * /api/wellbeing/status:

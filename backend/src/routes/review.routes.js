@@ -10,6 +10,18 @@ const { verifyToken, requireRole } = require('../middlewares/auth.middleware');
  *   description: Ulasan dan Rating Konselor
  */
 
+router.get('/', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Reviews routes are available.',
+        endpoints: [
+            'POST /api/reviews/:appointmentId (student)',
+            'GET /api/reviews/counselor/:counselorId (public)',
+            'GET /api/reviews/mine (counselor)',
+        ],
+    });
+});
+
 /**
  * @swagger
  * /api/reviews/{appointmentId}:
