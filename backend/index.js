@@ -33,6 +33,8 @@ const articleRoutes = require('./src/routes/article.routes');
 const chatbotRoutes = require('./src/routes/chatbot.routes');
 
 const app = express();
+app.set('trust proxy', 1);
+
 const PORT = process.env.PORT || 5000;
 const isProd = process.env.NODE_ENV === 'production';
 
@@ -57,11 +59,11 @@ const allowedOrigins = isProd
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Izinkan request tanpa origin (Postman, server-to-server)
+        // Jangan throw Error keras yang membuat 500 di Vercel, cukup tolak aksesnya
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
-            callback(new Error(`CORS blocked: ${origin}`));
+            callback(null, false);
         }
     },
     credentials: true,
