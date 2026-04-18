@@ -26,10 +26,21 @@ const uploadAvatar = async (req, res, next) => {
         if (!req.file) {
             return res.status(400).json({ success: false, message: 'Tidak ada file yang diupload.' });
         }
-        const filename = req.file.filename;
-        const avatarUrl = `/uploads/avatars/${filename}`;
 
-        // Simpan URL ke database
+        let avatarUrl;
+        if (req.file.filename) {
+            // diskStorage (local dev)
+            avatarUrl = `/uploads/avatars/${req.file.filename}`;
+        } else if (req.file.buffer) {
+            // memoryStorage (Vercel production)
+            // Save to /tmp (the only writable dir on Vercel)
+            const fs = require('fs');
+            const tmpName = `avatar-${req.user.userId}-${Date.now()}${path.extname(req.file.originalname)}`;
+            const tmpPath = path.join('/tmp', tmpName);
+            fs.writeFileSync(tmpPath, req.file.buffer);
+            avatarUrl = `/tmp/${tmpName}`;
+        }
+
         await prisma.student.update({
             where: { userId: req.user.userId },
             data: { avatarUrl },

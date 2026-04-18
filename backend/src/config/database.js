@@ -6,12 +6,11 @@ function createPrisma() {
     const isProd = process.env.NODE_ENV === 'production';
 
     if (isProd) {
-        // Avoid crashing the whole serverless function at import-time.
-        // If DATABASE_URL is missing, we'll throw a clear error when DB is actually used.
+        // Instead of throwing at boot-time (which kills ALL routes on Vercel),
+        // we just log a warning.  The actual PrismaClient constructor will throw
+        // a clear error the moment any DB query is executed without a valid URL.
         if (!process.env.DATABASE_URL) {
-            const err = new Error('Missing DATABASE_URL. Set it in Vercel Environment Variables.');
-            err.code = 'MISSING_DATABASE_URL';
-            throw err;
+            console.error('[PRISMA] WARNING — DATABASE_URL is not set. DB queries will fail at runtime.');
         }
         return new PrismaClient();
     }

@@ -20,7 +20,21 @@ const uploadAvatar = async (req, res, next) => {
         if (!req.file) {
             return res.status(400).json({ success: false, message: 'Tidak ada file yang diupload.' });
         }
-        const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+
+        let avatarUrl;
+        if (req.file.filename) {
+            // diskStorage (local dev)
+            avatarUrl = `/uploads/avatars/${req.file.filename}`;
+        } else if (req.file.buffer) {
+            // memoryStorage (Vercel production)
+            const fs = require('fs');
+            const path = require('path');
+            const tmpName = `avatar-${req.user.userId}-${Date.now()}${path.extname(req.file.originalname)}`;
+            const tmpPath = path.join('/tmp', tmpName);
+            fs.writeFileSync(tmpPath, req.file.buffer);
+            avatarUrl = `/tmp/${tmpName}`;
+        }
+
         await prisma.counselor.update({
             where: { userId: req.user.userId },
             data: { avatarUrl },
