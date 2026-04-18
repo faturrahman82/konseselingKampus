@@ -16,41 +16,21 @@ const rateLimit = require('express-rate-limit');
 const setupSwagger = require('./src/config/swagger');
 const { errorHandler } = require('./src/utils/error.handler');
 
-function safeRequireRoute(modulePath) {
-    try {
-        // eslint-disable-next-line import/no-dynamic-require, global-require
-        return require(modulePath);
-    } catch (err) {
-        console.error(`[BOOT] Failed to load route module: ${modulePath}`);
-        console.error(err);
-        const router = express.Router();
-        router.use((_req, res) => {
-            res.status(500).json({
-                success: false,
-                message: `Route module failed to load: ${modulePath}`,
-                error: err.message,
-                stack: err.stack,
-            });
-        });
-        return router;
-    }
-}
-
-// Import Routes (wrapped so a single bad module doesn't crash serverless boot)
-const authRoutes = safeRequireRoute('./src/routes/auth.routes');
-const scheduleRoutes = safeRequireRoute('./src/routes/schedule.routes');
-const appointmentRoutes = safeRequireRoute('./src/routes/appointment.routes');
-const reportRoutes = safeRequireRoute('./src/routes/report.routes');
-const wellbeingRoutes = safeRequireRoute('./src/routes/wellbeing.routes');
-const dashboardRoutes = safeRequireRoute('./src/routes/dashboard.routes');
-const adminRoutes = safeRequireRoute('./src/routes/admin.routes');
-const notificationRoutes = safeRequireRoute('./src/routes/notification.routes');
-const chatRoutes = safeRequireRoute('./src/routes/chat.routes');
-const counselorRoutes = safeRequireRoute('./src/routes/counselor.routes');
-const studentRoutes = safeRequireRoute('./src/routes/student.routes');
-const reviewRoutes = safeRequireRoute('./src/routes/review.routes');
-const articleRoutes = safeRequireRoute('./src/routes/article.routes');
-const chatbotRoutes = safeRequireRoute('./src/routes/chatbot.routes');
+// Import Routes (MUST use static require — Vercel's file tracer cannot follow dynamic paths)
+const authRoutes = require('./src/routes/auth.routes');
+const scheduleRoutes = require('./src/routes/schedule.routes');
+const appointmentRoutes = require('./src/routes/appointment.routes');
+const reportRoutes = require('./src/routes/report.routes');
+const wellbeingRoutes = require('./src/routes/wellbeing.routes');
+const dashboardRoutes = require('./src/routes/dashboard.routes');
+const adminRoutes = require('./src/routes/admin.routes');
+const notificationRoutes = require('./src/routes/notification.routes');
+const chatRoutes = require('./src/routes/chat.routes');
+const counselorRoutes = require('./src/routes/counselor.routes');
+const studentRoutes = require('./src/routes/student.routes');
+const reviewRoutes = require('./src/routes/review.routes');
+const articleRoutes = require('./src/routes/article.routes');
+const chatbotRoutes = require('./src/routes/chatbot.routes');
 
 const app = express();
 app.set('trust proxy', 1);
