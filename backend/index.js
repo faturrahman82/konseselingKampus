@@ -28,6 +28,8 @@ function safeRequireRoute(modulePath) {
             res.status(500).json({
                 success: false,
                 message: `Route module failed to load: ${modulePath}`,
+                error: err.message,
+                stack: err.stack,
             });
         });
         return router;
