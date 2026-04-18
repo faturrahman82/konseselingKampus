@@ -52,20 +52,33 @@ app.use(helmet({
 // Compression: Gzip semua response → lebih cepat & hemat bandwidth
 app.use(compression());
 
-// CORS: Di production hanya izinkan dari domain FE
+// CORS: Production dikunci via env, tapi tetap support domain Vercel (preview/prod).
 const allowedOrigins = isProd
-    ? (process.env.FRONTEND_URL || 'http://localhost:5173').split(',')
+    ? (process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || '')
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
     : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5000'];
 
+function isAllowedOrigin(origin) {
+    if (!origin) return true; // non-browser / same-origin
+    if (!isProd) return allowedOrigins.includes(origin);
+
+    if (allowedOrigins.includes(origin)) return true;
+
+    // Allow Vercel-hosted frontends (Preview + Production) by default.
+    // Keep this intentionally narrow: only https and only *.vercel.app hosts.
+    try {
+        const { protocol, hostname } = new URL(origin);
+        if (protocol === 'https:' && hostname.endsWith('.vercel.app')) return true;
+    } catch (_) {
+        // ignore invalid Origin header
+    }
+    return false;
+}
+
 app.use(cors({
-    origin: (origin, callback) => {
-        // Jangan throw Error keras yang membuat 500 di Vercel, cukup tolak aksesnya
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(null, false);
-        }
-    },
+    origin: (origin, callback) => callback(null, isAllowedOrigin(origin)),
     credentials: true,
 }));
 
