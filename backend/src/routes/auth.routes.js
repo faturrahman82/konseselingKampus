@@ -10,6 +10,22 @@ const { verifyToken } = require('../middlewares/auth.middleware');
  *   description: Autentikasi pengguna (Login & Register)
  */
 
+// Simple ping for browser/manual check
+router.get('/', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Auth routes are available.',
+        endpoints: [
+            'POST /api/auth/register',
+            'POST /api/auth/login',
+            'PATCH /api/auth/complete-profile',
+            'GET /api/auth/me',
+            'POST /api/auth/forgot-password',
+            'POST /api/auth/reset-password',
+        ],
+    });
+});
+
 /**
  * @swagger
  * /api/auth/register:
