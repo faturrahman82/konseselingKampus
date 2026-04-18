@@ -3,6 +3,14 @@ const router = express.Router();
 const dashboardController = require('../controllers/dashboard.controller');
 const { verifyToken, requireRole } = require('../middlewares/auth.middleware');
 
+router.get('/', verifyToken, (_req, res) => {
+    res.json({
+        success: true,
+        message: 'Dashboard routes OK',
+        endpoints: ['GET /student', 'GET /counselor', 'GET /admin'],
+    });
+});
+
 /**
  * @swagger
  * tags:

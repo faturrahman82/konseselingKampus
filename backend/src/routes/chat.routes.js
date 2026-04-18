@@ -3,6 +3,19 @@ const router = express.Router();
 const chatController = require('../controllers/chat.controller');
 const { verifyToken } = require('../middlewares/auth.middleware');
 
+router.get('/', verifyToken, (_req, res) => {
+    res.json({
+        success: true,
+        message: 'Chat routes OK',
+        endpoints: [
+            'GET /inbox',
+            'GET /:otherUserId',
+            'POST /',
+            'PATCH /:otherUserId/read',
+        ],
+    });
+});
+
 /**
  * @swagger
  * tags:

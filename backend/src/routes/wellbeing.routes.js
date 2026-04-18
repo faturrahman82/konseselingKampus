@@ -3,6 +3,14 @@ const router = express.Router();
 const wellbeingController = require('../controllers/wellbeing.controller');
 const { verifyToken, requireRole } = require('../middlewares/auth.middleware');
 
+router.get('/', verifyToken, requireRole(['student']), (_req, res) => {
+    res.json({
+        success: true,
+        message: 'Wellbeing routes OK',
+        endpoints: ['GET /status', 'POST /check-in', 'GET /history'],
+    });
+});
+
 /**
  * @swagger
  * tags:

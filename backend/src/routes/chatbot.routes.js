@@ -3,6 +3,10 @@ const router = express.Router();
 const { GoogleGenAI } = require('@google/genai');
 const { verifyToken } = require('../middlewares/auth.middleware');
 
+router.get('/health', (_req, res) => {
+    res.json({ success: true, message: 'Chatbot routes OK' });
+});
+
 const SYSTEM_PROMPT = `Kamu adalah Kana, asisten AI UniCounsel — platform layanan konseling kesehatan mental untuk mahasiswa di universitas.
 
 TENTANG UNICOUNSEL:

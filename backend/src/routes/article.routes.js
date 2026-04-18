@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../middlewares/auth.middleware');
 
+router.get('/health', (_req, res) => {
+    res.json({ success: true, message: 'Articles routes OK' });
+});
+
 // Simple in-memory cache per category (15 menit)
 const cache = {};
 const CACHE_TTL = 15 * 60 * 1000; // 15 minutes

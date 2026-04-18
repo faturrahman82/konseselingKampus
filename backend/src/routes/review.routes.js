@@ -3,6 +3,18 @@ const router = express.Router();
 const reviewController = require('../controllers/review.controller');
 const { verifyToken, requireRole } = require('../middlewares/auth.middleware');
 
+router.get('/', (_req, res) => {
+    res.json({
+        success: true,
+        message: 'Reviews routes OK',
+        endpoints: [
+            'GET /counselor/:counselorId',
+            'GET /mine (counselor)',
+            'POST /:appointmentId (student)',
+        ],
+    });
+});
+
 /**
  * @swagger
  * tags:

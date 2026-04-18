@@ -3,6 +3,10 @@ const router = express.Router();
 const notificationController = require('../controllers/notification.controller');
 const { verifyToken, requireRole } = require('../middlewares/auth.middleware');
 
+router.get('/health', (_req, res) => {
+    res.json({ success: true, message: 'Notifications routes OK' });
+});
+
 /**
  * @swagger
  * tags:

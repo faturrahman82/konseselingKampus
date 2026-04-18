@@ -4,6 +4,14 @@ const studentController = require('../controllers/student.controller');
 const { verifyToken, requireRole } = require('../middlewares/auth.middleware');
 const { avatarUpload } = require('../middlewares/upload.middleware');
 
+router.get('/', verifyToken, requireRole(['student']), (_req, res) => {
+    res.json({
+        success: true,
+        message: 'Student routes OK',
+        endpoints: ['PATCH /profile', 'POST /change-password', 'POST /avatar'],
+    });
+});
+
 /**
  * @swagger
  * tags:
