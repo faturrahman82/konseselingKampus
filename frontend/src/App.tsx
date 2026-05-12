@@ -8,6 +8,7 @@ import { Toaster } from 'sonner';
 // ── Lazy Load semua pages (code splitting per route) ──
 // Auth Pages
 const Login            = lazy(() => import('./pages/Login'));
+const Landing          = lazy(() => import('./pages/Landing'));
 const Register         = lazy(() => import('./pages/Register'));
 const ForgotPassword   = lazy(() => import('./pages/ForgotPassword'));
 const CompleteProfile  = lazy(() => import('./pages/CompleteProfile'));
@@ -62,15 +63,6 @@ const ProtectedRoute = ({
   return <>{children}</>;
 };
 
-// ── Root Redirect by role ──
-const RootRedirect = () => {
-  const { user } = useAuthStore();
-  if (!user) return <Navigate to="/login" replace />;
-  if (user.role === 'counselor') return <Navigate to="/konselor/dasbor" replace />;
-  if (user.role === 'admin') return <Navigate to="/admin" replace />;
-  return <Navigate to="/mahasiswa/dasbor" replace />;
-};
-
 function App() {
   const theme = useThemeStore(state => state.theme);
 
@@ -114,7 +106,7 @@ function App() {
       <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Root */}
-          <Route path="/" element={<RootRedirect />} />
+          <Route path="/" element={<Landing />} />
 
           {/* ── Auth Routes ── */}
           <Route path="/login" element={<Login />} />
