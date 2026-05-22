@@ -1,119 +1,113 @@
-# UniCounsel
+# 🛡️ UniCounsel
 
-UniCounsel adalah aplikasi layanan konseling kampus yang membantu mahasiswa melakukan pemesanan sesi konseling, konselor mengelola jadwal dan sesi, serta admin memantau data layanan konseling dalam satu sistem terpadu.
+**UniCounsel** adalah aplikasi layanan konseling kampus berbasis web untuk membantu mahasiswa melakukan booking konseling, konselor mengelola jadwal dan sesi, serta admin memantau layanan konseling dalam satu sistem terpadu.
 
-Project ini dibuat sebagai aplikasi full-stack dengan pembagian peran utama: Mahasiswa, Konselor, dan Admin.
+> Platform konseling universitas untuk Mahasiswa, Konselor, dan Admin.
 
-## Daftar Isi
+---
 
-- [Tentang Project](#tentang-project)
-- [Fitur Utama](#fitur-utama)
-- [Role Pengguna](#role-pengguna)
-- [Teknologi](#teknologi)
-- [Struktur Project](#struktur-project)
-- [Alur Sistem](#alur-sistem)
-- [Database](#database)
-- [Cara Menjalankan Project](#cara-menjalankan-project)
-- [Konfigurasi Environment](#konfigurasi-environment)
-- [Akses Pengguna](#akses-pengguna)
-- [API Endpoint](#api-endpoint)
-- [Halaman Utama](#halaman-utama)
-- [Catatan Keamanan](#catatan-keamanan)
-- [Status Project](#status-project)
-- [Lisensi](#lisensi)
+## ✨ Ringkasan
 
-## Tentang Project
+UniCounsel dibuat untuk mendigitalisasi proses layanan konseling di lingkungan kampus. Sistem ini mendukung alur mulai dari registrasi mahasiswa, pengisian profil akademik, pencarian konselor, pemilihan jadwal, approval sesi, pelaksanaan konseling, pemberian ulasan, hingga laporan admin.
 
-UniCounsel dirancang untuk mendigitalisasi proses layanan konseling di lingkungan universitas. Melalui aplikasi ini, mahasiswa dapat mencari konselor, memilih jadwal yang tersedia, mengajukan booking, mengikuti sesi konseling, dan memberikan ulasan setelah sesi selesai.
+| Area | Keterangan |
+|---|---|
+| Nama Project | UniCounsel |
+| Jenis Aplikasi | University Counseling Platform |
+| Role Utama | Mahasiswa, Konselor, Admin |
+| Frontend | React, TypeScript, Vite, Tailwind CSS |
+| Backend | Node.js, Express, Prisma |
+| Database | MySQL |
+| Autentikasi | JWT dan role-based access |
 
-Konselor dapat mengatur slot jadwal, menyetujui atau menolak permintaan mahasiswa, menandai sesi selesai, serta memantau aktivitas konseling. Admin dapat mengelola data konselor, melihat statistik sistem, mengatur konfigurasi aplikasi, dan menghasilkan laporan layanan konseling.
+---
 
-## Fitur Utama
+## 📌 Daftar Isi
 
-- Landing page sebagai pengenalan layanan UniCounsel.
-- Autentikasi pengguna dengan role Mahasiswa, Konselor, dan Admin.
-- Registrasi akun mahasiswa dan pengisian profil akademik.
-- Dashboard mahasiswa berisi ringkasan jadwal, riwayat sesi, skor kesejahteraan, dan mood check-in.
-- Pencarian konselor berdasarkan nama atau spesialisasi.
-- Booking jadwal konseling berdasarkan slot yang tersedia.
-- Pengelolaan jadwal konselor.
-- Approval atau penolakan permintaan janji temu oleh konselor.
-- Riwayat sesi dan ulasan konselor.
-- Dashboard admin untuk melihat statistik sistem.
-- Manajemen data konselor oleh admin.
-- Generate laporan konseling berdasarkan rentang tanggal.
-- Notifikasi sistem untuk status appointment.
-- Chat dan chatbot pendukung.
+- [Fitur Utama](#-fitur-utama)
+- [Role Pengguna](#-role-pengguna)
+- [Teknologi](#-teknologi)
+- [Struktur Project](#-struktur-project)
+- [Alur Sistem](#-alur-sistem)
+- [Database](#-database)
+- [Cara Menjalankan Project](#-cara-menjalankan-project)
+- [Seed Data Contoh](#-seed-data-contoh)
+- [Konfigurasi Environment](#-konfigurasi-environment)
+- [Akses Pengguna](#-akses-pengguna)
+- [API Endpoint](#-api-endpoint)
+- [Halaman Aplikasi](#-halaman-aplikasi)
+- [Catatan Production](#-catatan-production)
 
-## Role Pengguna
+---
 
-### Mahasiswa
+## 🚀 Fitur Utama
 
-Mahasiswa dapat:
+- 🏠 **Landing Page** untuk pengenalan layanan konseling kampus.
+- 🔐 **Autentikasi pengguna** dengan role Mahasiswa, Konselor, dan Admin.
+- 🎓 **Profil akademik mahasiswa** sebagai data awal sebelum memakai layanan.
+- 🧑‍⚕️ **Pencarian konselor** berdasarkan nama atau spesialisasi.
+- 📅 **Booking jadwal konseling** berdasarkan slot konselor yang tersedia.
+- ✅ **Approval sesi** oleh konselor, termasuk status approved/rejected/completed.
+- 💬 **Pesan dan notifikasi** untuk mendukung komunikasi antar pengguna.
+- 🙂 **Mood check-in** dan skor kesejahteraan mahasiswa.
+- ⭐ **Review dan rating konselor** setelah sesi selesai.
+- 📊 **Dashboard admin** untuk melihat statistik layanan.
+- 📄 **Laporan konseling** berdasarkan rentang tanggal.
+- ⚙️ **Pengaturan sistem** untuk konfigurasi aplikasi.
 
-- Membuat akun dan melengkapi profil akademik.
-- Melihat dashboard pribadi.
-- Mencari konselor.
-- Melakukan booking jadwal konseling.
-- Melihat jadwal dan riwayat sesi.
-- Melakukan mood check-in.
-- Mengirim pesan.
-- Memberikan rating dan ulasan setelah sesi selesai.
+---
 
-### Konselor
+## 👥 Role Pengguna
 
-Konselor dapat:
+### 🎓 Mahasiswa
 
-- Melihat dashboard aktivitas.
-- Membuat dan mengelola slot jadwal.
-- Meninjau permintaan janji temu.
-- Menyetujui atau menolak booking mahasiswa.
-- Menandai sesi konseling sebagai selesai.
-- Melihat data mahasiswa terkait sesi.
-- Mengelola pesan dan profil konselor.
+Mahasiswa dapat membuat akun, melengkapi profil akademik, mencari konselor, memilih slot jadwal, mengajukan booking, melihat riwayat sesi, melakukan mood check-in, mengirim pesan, dan memberikan ulasan setelah sesi selesai.
 
-### Admin
+### 🧑‍⚕️ Konselor
 
-Admin dapat:
+Konselor dapat mengatur slot jadwal, meninjau permintaan janji temu, menyetujui atau menolak booking mahasiswa, menjalankan sesi, menandai sesi selesai, serta mengelola profil dan pesan.
 
-- Melihat panel kontrol sistem.
-- Mengelola data konselor.
-- Melihat statistik mahasiswa, konselor, dan kesehatan sistem.
-- Membuat laporan layanan konseling.
-- Mengatur konfigurasi aplikasi global.
+### 🛠️ Admin
 
-## Teknologi
+Admin dapat memantau statistik sistem, mengelola data konselor, melihat laporan layanan konseling, serta mengatur konfigurasi global aplikasi.
+
+---
+
+## 🧰 Teknologi
 
 ### Frontend
 
-- React
-- TypeScript
-- Vite
-- Tailwind CSS
-- React Router
-- Axios
-- Zustand
-- React Hook Form
-- Zod
-- Lucide React
-- Sonner
+| Teknologi | Fungsi |
+|---|---|
+| React | Membangun antarmuka aplikasi |
+| TypeScript | Menjaga tipe data frontend |
+| Vite | Development server dan build tool |
+| Tailwind CSS | Styling UI |
+| React Router | Routing halaman |
+| Axios | Komunikasi API |
+| Zustand | State management |
+| React Hook Form + Zod | Form dan validasi |
+| Lucide React | Icon UI |
+| Sonner | Toast notification |
 
 ### Backend
 
-- Node.js
-- Express
-- Prisma ORM
-- MySQL
-- JSON Web Token
-- BcryptJS
-- Nodemailer
-- Multer
-- Swagger
-- Helmet
-- CORS
-- Express Rate Limit
+| Teknologi | Fungsi |
+|---|---|
+| Node.js | Runtime backend |
+| Express | Web framework API |
+| Prisma | ORM untuk database |
+| MySQL | Database relasional |
+| JWT | Autentikasi token |
+| BcryptJS | Hash password |
+| Nodemailer | Pengiriman email |
+| Multer | Upload file |
+| Swagger | Dokumentasi API |
+| Helmet + CORS + Rate Limit | Keamanan API |
 
-## Struktur Project
+---
+
+## 📁 Struktur Project
 
 ```text
 perocobaan/
@@ -137,7 +131,6 @@ perocobaan/
 |   |   |-- api/
 |   |   |-- components/
 |   |   |-- layouts/
-|   |   |-- lib/
 |   |   |-- pages/
 |   |   |   |-- admin/
 |   |   |   |-- konselor/
@@ -149,31 +142,31 @@ perocobaan/
 `-- README.md
 ```
 
-## Alur Sistem
+---
 
-Alur utama layanan konseling pada UniCounsel:
+## 🔄 Alur Sistem
 
 ```text
-Konselor menambahkan slot jadwal
+Konselor membuka slot jadwal
         |
 Mahasiswa registrasi dan melengkapi profil
         |
 Mahasiswa mencari konselor dan memilih slot
         |
-Mahasiswa mengajukan booking konseling
+Mahasiswa mengajukan booking
         |
-Konselor menyetujui atau menolak permintaan
+Konselor menyetujui atau menolak booking
         |
-Jika disetujui, mahasiswa mengikuti sesi konseling
+Mahasiswa mengikuti sesi konseling
         |
 Konselor menandai sesi selesai
         |
-Mahasiswa memberi rating dan ulasan
+Mahasiswa memberi review dan rating
         |
-Admin melihat laporan layanan konseling
+Admin melihat laporan layanan
 ```
 
-Status appointment yang digunakan:
+Status appointment:
 
 ```text
 PENDING -> APPROVED -> COMPLETED
@@ -181,33 +174,37 @@ PENDING -> REJECTED
 APPROVED -> CANCELLED
 ```
 
-## Database
+---
 
-Database menggunakan MySQL dan dikelola dengan Prisma ORM. Model utama yang digunakan:
+## 🗄️ Database
+
+Database menggunakan **MySQL** dan dikelola melalui **Prisma ORM**.
 
 | Tabel | Fungsi |
 |---|---|
-| `user` | Menyimpan akun utama, email, username, password hash, dan role. |
-| `student` | Menyimpan profil akademik mahasiswa. |
-| `counselor` | Menyimpan profil konselor, spesialisasi, status aktif, dan rating. |
-| `admin` | Menyimpan profil admin sistem. |
-| `counselorschedule` | Menyimpan slot jadwal yang dibuka oleh konselor. |
-| `appointment` | Menyimpan data booking dan status sesi konseling. |
-| `clinicalnote` | Menyimpan catatan klinis dari sesi konseling. |
-| `review` | Menyimpan rating dan ulasan mahasiswa untuk konselor. |
-| `moodlog` | Menyimpan data mood check-in mahasiswa. |
-| `message` | Menyimpan pesan antar pengguna. |
-| `notification` | Menyimpan notifikasi sistem untuk pengguna. |
-| `systemsetting` | Menyimpan konfigurasi global aplikasi. |
+| `user` | Akun utama, email, username, password hash, dan role |
+| `student` | Profil akademik mahasiswa |
+| `counselor` | Profil konselor, spesialisasi, status aktif, rating |
+| `admin` | Profil admin sistem |
+| `counselorschedule` | Slot jadwal konselor |
+| `appointment` | Booking dan status sesi konseling |
+| `clinicalnote` | Catatan klinis sesi |
+| `review` | Rating dan ulasan konselor |
+| `moodlog` | Mood check-in mahasiswa |
+| `message` | Pesan antar pengguna |
+| `notification` | Notifikasi sistem |
+| `systemsetting` | Konfigurasi global aplikasi |
 
 Relasi utama:
 
-- Satu `user` dapat memiliki satu profil `student`, `counselor`, atau `admin`.
-- Satu `student` dapat memiliki banyak `appointment`, `moodlog`, dan `review`.
-- Satu `counselor` dapat memiliki banyak `counselorschedule`, `appointment`, `clinicalnote`, dan `review`.
-- Satu `appointment` terhubung dengan mahasiswa, konselor, jadwal, catatan klinis, dan ulasan.
+- `user` memiliki satu profil sesuai role: `student`, `counselor`, atau `admin`.
+- `student` dapat memiliki banyak `appointment`, `moodlog`, dan `review`.
+- `counselor` dapat memiliki banyak `counselorschedule`, `appointment`, `clinicalnote`, dan `review`.
+- `appointment` menghubungkan mahasiswa, konselor, jadwal, catatan klinis, dan ulasan.
 
-## Cara Menjalankan Project
+---
+
+## 🏃 Cara Menjalankan Project
 
 ### 1. Clone Repository
 
@@ -232,15 +229,13 @@ Backend berjalan di:
 http://localhost:5000
 ```
 
-Dokumentasi API Swagger tersedia di mode development:
+Swagger API tersedia pada mode development:
 
 ```text
 http://localhost:5000/api-docs
 ```
 
 ### 3. Jalankan Frontend
-
-Buka terminal baru:
 
 ```bash
 cd frontend
@@ -254,7 +249,33 @@ Frontend berjalan di:
 http://localhost:5173
 ```
 
-## Konfigurasi Environment
+---
+
+## 🌱 Seed Data Contoh
+
+File `backend/prisma/seed.js` hanya berisi **data contoh untuk development/local testing**. Seed ini tidak boleh berisi akun production, email asli, password asli, atau link meeting asli.
+
+Jalankan seed contoh:
+
+```bash
+cd backend
+node prisma/seed.js
+```
+
+Akun contoh yang dibuat:
+
+| Role | Email Contoh | Password Contoh |
+|---|---|---|
+| Admin | `admin@example.com` | `PasswordContoh123!` |
+| Konselor | `konselor.akademik@example.com` | `PasswordContoh123!` |
+| Konselor | `konselor.keluarga@example.com` | `PasswordContoh123!` |
+| Mahasiswa | `mahasiswa@example.com` | `PasswordContoh123!` |
+
+> Untuk production, buat akun melalui proses internal/admin dan jangan memakai seed contoh.
+
+---
+
+## 🔧 Konfigurasi Environment
 
 Buat file `.env` pada folder `backend`:
 
@@ -282,17 +303,17 @@ Buat file `.env` pada folder `frontend`:
 VITE_API_URL=http://localhost:5000/api
 ```
 
-Jangan menyimpan credential asli di repository publik.
+---
 
-## Akses Pengguna
+## 🔐 Akses Pengguna
 
-Pada tahap produksi, akun pengguna tidak dicantumkan langsung di dokumentasi publik. Pembuatan akun dilakukan melalui fitur registrasi, panel admin, atau proses provisioning internal sesuai kebutuhan sistem.
+Pada tahap production, credential pengguna tidak dicantumkan di dokumentasi publik.
 
 | Role | Cara Akses |
 |---|---|
-| Mahasiswa | Membuat akun melalui halaman register, lalu melengkapi profil akademik. |
-| Konselor | Akun dibuat atau dikelola oleh admin sistem. |
-| Admin | Akun dibuat melalui proses internal dan tidak dibagikan pada repository publik. |
+| Mahasiswa | Membuat akun melalui halaman register |
+| Konselor | Akun dibuat atau dikelola oleh admin |
+| Admin | Akun dibuat melalui proses internal |
 
 Halaman registrasi mahasiswa:
 
@@ -300,28 +321,30 @@ Halaman registrasi mahasiswa:
 http://localhost:5173/register
 ```
 
-## API Endpoint
+---
 
-Beberapa endpoint utama:
+## 🧭 API Endpoint
 
 | Endpoint | Keterangan |
 |---|---|
-| `/api/auth` | Login, register, reset password, dan autentikasi. |
-| `/api/students` | Data profil mahasiswa. |
-| `/api/counselors` | Data konselor dan pencarian konselor. |
-| `/api/schedules` | Slot jadwal konselor. |
-| `/api/appointments` | Booking dan status appointment. |
-| `/api/reviews` | Rating dan ulasan konselor. |
-| `/api/reports` | Laporan admin. |
-| `/api/dashboard` | Statistik dashboard. |
-| `/api/notifications` | Notifikasi pengguna. |
-| `/api/chat` | Pesan antar pengguna. |
-| `/api/chatbot` | Chatbot pendukung. |
-| `/api/articles` | Artikel untuk mahasiswa. |
-| `/api/admin` | Fitur administrasi sistem. |
-| `/api/wellbeing` | Mood check-in dan skor kesejahteraan. |
+| `/api/auth` | Login, register, reset password, autentikasi |
+| `/api/students` | Profil mahasiswa |
+| `/api/counselors` | Data dan pencarian konselor |
+| `/api/schedules` | Slot jadwal konselor |
+| `/api/appointments` | Booking dan status appointment |
+| `/api/reviews` | Rating dan ulasan |
+| `/api/reports` | Laporan admin |
+| `/api/dashboard` | Statistik dashboard |
+| `/api/notifications` | Notifikasi pengguna |
+| `/api/chat` | Pesan antar pengguna |
+| `/api/chatbot` | Chatbot pendukung |
+| `/api/articles` | Artikel mahasiswa |
+| `/api/admin` | Fitur administrasi |
+| `/api/wellbeing` | Mood check-in dan skor kesejahteraan |
 
-## Halaman Utama
+---
+
+## 🖥️ Halaman Aplikasi
 
 ### Umum
 
@@ -359,14 +382,19 @@ Beberapa endpoint utama:
 - `/admin/laporan`
 - `/admin/pengaturan`
 
-## Catatan Keamanan
+---
 
-- Jangan commit file `.env` yang berisi credential asli.
-- Gunakan password database, JWT secret, SMTP password, dan API key dalam bentuk environment variable.
-- Untuk production, gunakan credential yang berbeda dari development.
-- Pastikan `DATABASE_URL`, `JWT_SECRET`, dan API key tidak dipublikasikan di GitHub.
+## 🛡️ Catatan Production
 
-## Status Project
+- Jangan commit file `.env`.
+- Jangan simpan credential production di `README.md`, `AKUN_DEMO.md`, `seed.js`, atau file publik lain.
+- Gunakan akun production yang dibuat lewat proses internal/admin.
+- Jika credential pernah terlanjur masuk GitHub, segera ganti password/token/API key.
+- Gunakan seed hanya untuk development/local testing.
+
+---
+
+## 📌 Status Project
 
 Project sudah memiliki:
 
@@ -374,9 +402,11 @@ Project sudah memiliki:
 - Backend dengan route, controller, service, middleware, dan Prisma schema.
 - Database relasional untuk layanan konseling.
 - Proteksi route berdasarkan role.
+- Seed data contoh yang aman untuk development.
 - Dokumentasi alur penggunaan pada `PANDUAN_ALUR.md`.
-- Dokumentasi publik sudah tidak mencantumkan credential akun.
 
-## Lisensi
+---
+
+## 📄 Lisensi
 
 Project ini dibuat untuk kebutuhan praktikum dan pengembangan sistem layanan konseling kampus.
