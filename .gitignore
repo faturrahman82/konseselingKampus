@@ -1,0 +1,11 @@
+# Local/sensitive documentation
+AKUN_DEMO.md
+
+# Environment files
+.env
+.env.*
+backend/.env
+frontend/.env
+
+# Local temporary Office files
+~$*.docx

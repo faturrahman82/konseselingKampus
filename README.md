@@ -15,7 +15,7 @@ Project ini dibuat sebagai aplikasi full-stack dengan pembagian peran utama: Mah
 - [Database](#database)
 - [Cara Menjalankan Project](#cara-menjalankan-project)
 - [Konfigurasi Environment](#konfigurasi-environment)
-- [Akun Demo](#akun-demo)
+- [Akses Pengguna](#akses-pengguna)
 - [API Endpoint](#api-endpoint)
 - [Halaman Utama](#halaman-utama)
 - [Catatan Keamanan](#catatan-keamanan)
@@ -145,7 +145,6 @@ perocobaan/
 |   |   `-- store/
 |   |-- index.html
 |   `-- package.json
-|-- AKUN_DEMO.md
 |-- PANDUAN_ALUR.md
 `-- README.md
 ```
@@ -285,25 +284,17 @@ VITE_API_URL=http://localhost:5000/api
 
 Jangan menyimpan credential asli di repository publik.
 
-## Akun Demo
+## Akses Pengguna
 
-Akun demo dapat dibuat dengan menjalankan seed:
+Pada tahap produksi, akun pengguna tidak dicantumkan langsung di dokumentasi publik. Pembuatan akun dilakukan melalui fitur registrasi, panel admin, atau proses provisioning internal sesuai kebutuhan sistem.
 
-```bash
-cd backend
-node prisma/seed.js
-```
+| Role | Cara Akses |
+|---|---|
+| Mahasiswa | Membuat akun melalui halaman register, lalu melengkapi profil akademik. |
+| Konselor | Akun dibuat atau dikelola oleh admin sistem. |
+| Admin | Akun dibuat melalui proses internal dan tidak dibagikan pada repository publik. |
 
-Contoh akun admin:
-
-| Role | Email | Password |
-|---|---|---|
-| Admin | `admin@unicounsel.id` | `Admin@123` |
-| Konselor | `dr.sarah@unicounsel.id` | `Konselor@123` |
-| Konselor | `budi.santoso@unicounsel.id` | `Konselor@123` |
-| Konselor | `ayu.pratiwi@unicounsel.id` | `Konselor@123` |
-
-Akun mahasiswa dapat dibuat melalui halaman register:
+Halaman registrasi mahasiswa:
 
 ```text
 http://localhost:5173/register
@@ -384,7 +375,7 @@ Project sudah memiliki:
 - Database relasional untuk layanan konseling.
 - Proteksi route berdasarkan role.
 - Dokumentasi alur penggunaan pada `PANDUAN_ALUR.md`.
-- Daftar akun demo pada `AKUN_DEMO.md`.
+- Dokumentasi publik sudah tidak mencantumkan credential akun.
 
 ## Lisensi
 
