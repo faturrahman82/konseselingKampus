@@ -384,15 +384,6 @@ http://localhost:5173/register
 
 ---
 
-## 🛡️ Catatan Production
-
-- Jangan commit file `.env`.
-- Jangan simpan credential production di `README.md`, `AKUN_DEMO.md`, `seed.js`, atau file publik lain.
-- Gunakan akun production yang dibuat lewat proses internal/admin.
-- Jika credential pernah terlanjur masuk GitHub, segera ganti password/token/API key.
-- Gunakan seed hanya untuk development/local testing.
-
----
 
 ## 📌 Status Project
 
