@@ -1,3 +1,3 @@
 ALTER TABLE `Appointment`
-  ADD COLUMN IF NOT EXISTS `hiddenByStudentAt` DATETIME(3) NULL,
-  ADD COLUMN IF NOT EXISTS `hiddenByCounselorAt` DATETIME(3) NULL;
+  ADD COLUMN `hiddenByStudentAt` DATETIME(3) NULL,
+  ADD COLUMN `hiddenByCounselorAt` DATETIME(3) NULL;
