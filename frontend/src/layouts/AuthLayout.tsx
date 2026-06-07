@@ -1,4 +1,6 @@
 import React from 'react'
+import { ArrowLeft } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 // UniCounsel Logo Icon SVG
 export const UniCounselIcon = ({ size = 48 }: { size?: number }) => (
@@ -26,11 +28,22 @@ interface AuthLayoutProps {
   title: string
   subtitle?: string
   footer?: React.ReactNode
+  showHomeLink?: boolean
 }
 
-export const AuthLayout = ({ children, title, subtitle, footer }: AuthLayoutProps) => {
+export const AuthLayout = ({ children, title, subtitle, footer, showHomeLink = false }: AuthLayoutProps) => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 py-12">
+    <div className="relative min-h-screen flex flex-col items-center justify-center bg-background p-4 py-12">
+      {showHomeLink && (
+        <Link
+          to="/"
+          className="absolute left-4 top-4 sm:left-8 sm:top-8 inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-3.5 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span className="hidden sm:inline">Kembali ke Beranda</span>
+          <span className="sm:hidden">Beranda</span>
+        </Link>
+      )}
       {/* Logo + Brand */}
       <div className="flex flex-col items-center mb-6 gap-3">
         <UniCounselIcon size={56} />

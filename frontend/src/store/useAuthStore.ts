@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { disconnectSocket } from '@/api/socket';
 
 interface User {
   id: string;
@@ -23,7 +24,10 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       setAuth: (user, token) => set({ user, token }),
-      logout: () => set({ user: null, token: null }),
+      logout: () => {
+        disconnectSocket();
+        set({ user: null, token: null });
+      },
     }),
     {
       name: 'auth-storage',

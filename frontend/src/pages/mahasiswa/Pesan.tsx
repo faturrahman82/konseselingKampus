@@ -3,6 +3,7 @@ import { DashboardLayout } from '@/layouts/DashboardLayout'
 import { Send, Search, Loader2, MessageCircle, ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import api from '@/api/axios'
+import { getSocket } from '@/api/socket'
 
 interface Message {
   id: string
@@ -61,14 +62,23 @@ export default function MahasiswaPesan() {
 
   useEffect(() => { fetchInbox() }, [fetchInbox])
   useEffect(() => {
-    const interval = setInterval(() => fetchInbox(true), 5000)
-    return () => clearInterval(interval)
+    const socket = getSocket()
+    if (!socket) return
+    const onMessage = (message: Message) => {
+      const contact = selectedContactRef.current
+      if (contact && (message.senderId === contact.userId || message.receiverId === contact.userId)) {
+        setMessages(current => current.some(item => item.id === message.id) ? current : [...current, message])
+      }
+      fetchInbox(true)
+    }
+    socket.on('message:new', onMessage)
+    return () => { socket.off('message:new', onMessage) }
   }, [fetchInbox])
   useEffect(() => {
     const interval = setInterval(() => {
       const contact = selectedContactRef.current
-      if (contact) fetchMessages(contact.userId, true)
-    }, 3000)
+      if (contact && document.visibilityState === 'visible') fetchMessages(contact.userId, true)
+    }, 30000)
     return () => clearInterval(interval)
   }, [fetchMessages])
 

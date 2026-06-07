@@ -72,6 +72,14 @@ export default function LaporanAdmin() {
     catch { return t?.substring(11, 16) || '-' }
   }
 
+  const generatedAt = new Date().toLocaleString('id-ID', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
   // ── Export CSV ──────────────────────────────────────────────────
   const handleExportCSV = () => {
     if (!report) return
@@ -125,10 +133,155 @@ export default function LaporanAdmin() {
       {/* Print styles */}
       <style>{`
         @media print {
+          @page { size: A4; margin: 16mm 14mm 18mm; }
+          html, body {
+            background: #ffffff !important;
+            color: #111827 !important;
+            font-family: Arial, Helvetica, sans-serif !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
           body * { visibility: hidden; }
           #print-area, #print-area * { visibility: visible; }
-          #print-area { position: absolute; left: 0; top: 0; width: 100%; }
+          #print-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            color: #111827 !important;
+            background: #ffffff !important;
+          }
           .no-print { display: none !important; }
+          .print-only { display: block !important; }
+          .screen-only { display: none !important; }
+          .print-report { display: block !important; font-size: 11px; line-height: 1.45; }
+          .print-header {
+            border-bottom: 2px solid #1e3a8a;
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+          }
+          .print-kicker {
+            color: #1e3a8a !important;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+          }
+          .print-title {
+            color: #111827 !important;
+            font-size: 22px;
+            line-height: 1.2;
+            font-weight: 800;
+            margin: 0 0 5px;
+          }
+          .print-subtitle { color: #4b5563 !important; font-size: 11px; margin: 0; }
+          .print-meta {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            margin-bottom: 14px;
+          }
+          .print-meta-card {
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 8px 10px;
+            background: #f9fafb !important;
+          }
+          .print-label {
+            display: block;
+            color: #6b7280 !important;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+          }
+          .print-value { color: #111827 !important; font-size: 11px; font-weight: 700; }
+          .print-section-title {
+            color: #111827 !important;
+            font-size: 13px;
+            font-weight: 800;
+            margin: 16px 0 8px;
+          }
+          .print-summary {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 8px;
+            margin-bottom: 16px;
+          }
+          .print-summary-card {
+            border: 1px solid #d1d5db !important;
+            border-radius: 6px !important;
+            padding: 9px 10px !important;
+            background: #ffffff !important;
+            min-height: auto !important;
+          }
+          .print-summary-card p:first-child {
+            color: #1e3a8a !important;
+            font-size: 20px !important;
+            line-height: 1.1 !important;
+            margin-bottom: 4px !important;
+          }
+          .print-summary-card p:last-child {
+            color: #4b5563 !important;
+            font-size: 9px !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.04em !important;
+          }
+          .print-table-card {
+            border: 1px solid #d1d5db !important;
+            border-radius: 6px !important;
+            overflow: hidden !important;
+            background: #ffffff !important;
+          }
+          .print-table-card > div:first-child {
+            background: #f3f4f6 !important;
+            border-bottom: 1px solid #d1d5db !important;
+            padding: 9px 12px !important;
+          }
+          .print-table-card h3 { color: #111827 !important; font-size: 12px !important; margin: 0 !important; }
+          .print-table { width: 100% !important; border-collapse: collapse !important; font-size: 10px !important; }
+          .print-table thead tr { background: #1f2937 !important; border: 0 !important; }
+          .print-table th {
+            color: #ffffff !important;
+            font-size: 8.5px !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.06em !important;
+            text-transform: uppercase !important;
+            padding: 8px 7px !important;
+            border-right: 1px solid rgba(255,255,255,0.18) !important;
+            text-align: left !important;
+          }
+          .print-table td {
+            color: #111827 !important;
+            padding: 8px 7px !important;
+            border-top: 1px solid #e5e7eb !important;
+            vertical-align: top !important;
+          }
+          .print-table tbody tr:nth-child(even) { background: #f9fafb !important; }
+          .print-muted { color: #6b7280 !important; font-size: 9px !important; }
+          .print-status {
+            display: inline-block !important;
+            border: 1px solid #9ca3af !important;
+            border-radius: 999px !important;
+            color: #111827 !important;
+            background: #ffffff !important;
+            padding: 2px 7px !important;
+            font-size: 9px !important;
+            font-weight: 700 !important;
+          }
+          .print-footer {
+            display: flex !important;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 18px;
+            padding-top: 8px;
+            border-top: 1px solid #d1d5db;
+            color: #6b7280 !important;
+            font-size: 9px;
+          }
         }
       `}</style>
 
@@ -150,8 +303,15 @@ export default function LaporanAdmin() {
             <label className="text-xs font-medium text-muted-foreground">Tanggal Mulai</label>
             <input
               type="date"
+              lang="id-ID"
               value={startDate}
-              onChange={e => { setStartDate(e.target.value); setError('') }}
+              max={endDate || undefined}
+              onChange={e => {
+                setStartDate(e.target.value)
+                if (endDate && e.target.value > endDate) setEndDate('')
+                setError('')
+              }}
+              aria-label="Pilih tanggal mulai laporan"
               className="h-10 px-3 text-sm rounded-xl border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
@@ -159,8 +319,11 @@ export default function LaporanAdmin() {
             <label className="text-xs font-medium text-muted-foreground">Tanggal Akhir</label>
             <input
               type="date"
+              lang="id-ID"
               value={endDate}
+              min={startDate || undefined}
               onChange={e => { setEndDate(e.target.value); setError('') }}
+              aria-label="Pilih tanggal akhir laporan"
               className="h-10 px-3 text-sm rounded-xl border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
@@ -184,10 +347,33 @@ export default function LaporanAdmin() {
 
       {/* Report Result */}
       {report && (
-        <div id="print-area" className="space-y-6">
+        <div id="print-area" className="space-y-6 print-report">
 
           {/* Print Header — hanya muncul saat print */}
-          <div className="hidden print:block mb-4">
+          <div className="hidden print-only print-header">
+            <p className="print-kicker">UniCounsel - Platform Konseling Kesehatan Mental Mahasiswa</p>
+            <h1 className="print-title">Laporan Sistem Konseling</h1>
+            <p className="print-subtitle">
+              Rekapitulasi aktivitas layanan konseling kampus berdasarkan rentang periode yang dipilih.
+            </p>
+          </div>
+
+          <div className="hidden print-only print-meta">
+            <div className="print-meta-card">
+              <span className="print-label">Periode Laporan</span>
+              <span className="print-value">{formatDate(startDate)} - {formatDate(endDate)}</span>
+            </div>
+            <div className="print-meta-card">
+              <span className="print-label">Tanggal Cetak</span>
+              <span className="print-value">{generatedAt}</span>
+            </div>
+            <div className="print-meta-card">
+              <span className="print-label">Jumlah Data</span>
+              <span className="print-value">{report.appointments.length} sesi konseling</span>
+            </div>
+          </div>
+
+          <div className="hidden no-print">
             <h1 className="text-xl font-bold">Laporan Sistem Konseling UniCounsel</h1>
             <p className="text-sm text-gray-600">Periode: {formatDate(startDate)} — {formatDate(endDate)}</p>
           </div>
@@ -220,9 +406,10 @@ export default function LaporanAdmin() {
           </div>
 
           {/* Summary Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <h2 className="hidden print-only print-section-title">Ringkasan Laporan</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 print-summary">
             {statCards.map(s => (
-              <div key={s.label} className={cn('rounded-xl border p-4', s.bg)}>
+              <div key={s.label} className={cn('rounded-xl border p-4 print-summary-card', s.bg)}>
                 <p className={cn('text-2xl font-bold', s.color)}>{s.value}</p>
                 <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
               </div>
@@ -230,7 +417,8 @@ export default function LaporanAdmin() {
           </div>
 
           {/* Detail Table */}
-          <div className="bg-card rounded-xl border border-border overflow-hidden">
+          <h2 className="hidden print-only print-section-title">Detail Sesi Konseling</h2>
+          <div className="bg-card rounded-xl border border-border overflow-hidden print-table-card">
             <div className="px-5 py-4 border-b border-border">
               <h3 className="text-sm font-semibold text-foreground">
                 Detail Sesi ({report.appointments?.length || 0} data)
@@ -238,7 +426,7 @@ export default function LaporanAdmin() {
             </div>
             {(report.appointments?.length || 0) > 0 ? (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-sm print-table">
                   <thead>
                     <tr className="border-b border-border bg-secondary/30">
                       <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">No</th>
@@ -271,7 +459,7 @@ export default function LaporanAdmin() {
                             {a.counselingType === 'online' ? '🌐 Online' : '🏢 Tatap Muka'}
                           </td>
                           <td className="px-4 py-3">
-                            <span className={cn('text-xs font-medium px-2.5 py-1 rounded-full', s.cls)}>{s.label}</span>
+                            <span className={cn('text-xs font-medium px-2.5 py-1 rounded-full print-status', s.cls)}>{s.label}</span>
                           </td>
                         </tr>
                       )
@@ -285,6 +473,11 @@ export default function LaporanAdmin() {
                 <p className="text-sm text-muted-foreground">Tidak ada data dalam periode ini.</p>
               </div>
             )}
+          </div>
+
+          <div className="hidden print-only print-footer">
+            <span>Dicetak otomatis melalui UniCounsel</span>
+            <span>Dokumen ini digunakan untuk monitoring layanan konseling kampus.</span>
           </div>
         </div>
       )}

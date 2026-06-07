@@ -24,6 +24,8 @@ router.get('/', (req, res) => {
             'PUT /api/appointments/:id/status (counselor)',
             'POST /api/appointments/:id/notes (counselor)',
             'PATCH /api/appointments/:id/meeting-link (counselor)',
+            'DELETE /api/appointments/student-history/:id (student)',
+            'DELETE /api/appointments/counselor-history/:id (counselor)',
             'DELETE /api/appointments/:id (student)',
         ],
         note: 'Most endpoints require Authorization: Bearer <token>.',
@@ -182,6 +184,10 @@ router.get('/my-students', verifyToken, requireRole(['counselor']), appointmentC
  *           type: string
  */
 router.get('/student/:studentId', verifyToken, requireRole(['counselor']), appointmentController.getStudentDetail);
+
+router.delete('/student-history/:id', verifyToken, requireRole(['student']), appointmentController.hideStudentHistory);
+
+router.delete('/counselor-history/:id', verifyToken, requireRole(['counselor']), appointmentController.hideCounselorHistory);
 
 /**
  * @swagger

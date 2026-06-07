@@ -3,6 +3,7 @@ import { DashboardLayout } from '@/layouts/DashboardLayout'
 import { Send, Search, Loader2, MessageCircle, ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import api from '@/api/axios'
+import { getSocket } from '@/api/socket'
 
 interface Message {
   id: string
@@ -61,14 +62,23 @@ export default function KonselorPesan() {
 
   useEffect(() => { fetchInbox() }, [fetchInbox])
   useEffect(() => {
-    const t = setInterval(() => fetchInbox(true), 5000)
-    return () => clearInterval(t)
+    const socket = getSocket()
+    if (!socket) return
+    const onMessage = (message: Message) => {
+      const contact = selectedContactRef.current
+      if (contact && message.senderId === contact.userId) {
+        setMessages(current => current.some(item => item.id === message.id) ? current : [...current, message])
+      }
+      fetchInbox(true)
+    }
+    socket.on('message:new', onMessage)
+    return () => { socket.off('message:new', onMessage) }
   }, [fetchInbox])
   useEffect(() => {
     const t = setInterval(() => {
       const c = selectedContactRef.current
-      if (c) fetchMessages(c.userId, true)
-    }, 3000)
+      if (c && document.visibilityState === 'visible') fetchMessages(c.userId, true)
+    }, 30000)
     return () => clearInterval(t)
   }, [fetchMessages])
 

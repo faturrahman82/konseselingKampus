@@ -4,13 +4,15 @@ const prisma = require('../config/database');
  * Service: Create a single notification
  */
 const createNotification = async (userId, title, message) => {
-    return await prisma.notification.create({
+    const notification = await prisma.notification.create({
         data: {
             userId,
             title,
             message,
         },
     });
+    global.realtimeIo?.to(`user:${userId}`).emit('notification:new', notification);
+    return notification;
 };
 
 /**

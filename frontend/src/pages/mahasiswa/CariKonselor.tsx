@@ -1,9 +1,11 @@
 import { useEffect, useState, useRef } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { DashboardLayout } from '@/layouts/DashboardLayout'
 import { Search, SlidersHorizontal, X, Video, MapPin, Loader2, Calendar, ClipboardList } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import api from '@/api/axios'
 import { toast } from 'sonner'
+import { queryKeys } from '@/api/queryKeys'
 
 // ── Types ──
 interface Slot {
@@ -254,52 +256,55 @@ const CounselorCard = ({
 const SPECIALIZATIONS = ['Konseling Umum', 'Stres Akademik', 'Bimbingan Karir', 'Pengembangan Diri', 'Hubungan Sosial']
 
 export default function CariKonselor() {
-  const [counselors, setCounselors] = useState<Counselor[]>([])
-  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [filterSpec, setFilterSpec] = useState('')
   const [showFilter, setShowFilter] = useState(false)
   const [booking, setBooking] = useState<BookingState | null>(null)
-  const [confirming, setConfirming] = useState(false)
   const filterRef = useRef<HTMLDivElement>(null)
-
-  const fetchCounselors = async () => {
-    try {
-      setLoading(true)
-      const params: Record<string, string> = {}
-      if (search) params.search = search
-      if (filterSpec) params.specialization = filterSpec
-      const res = await api.get('/schedules', { params })
-      setCounselors(res.data.data || [])
-    } catch {
-      setCounselors([])
-    } finally {
-      setLoading(false)
-    }
-  }
+  const queryClient = useQueryClient()
 
   useEffect(() => {
-    const timer = setTimeout(() => fetchCounselors(), 400)
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 400)
     return () => clearTimeout(timer)
-  }, [search, filterSpec])
+  }, [search])
+
+  const { data: counselors = [], isPending: loading } = useQuery<Counselor[]>({
+    queryKey: queryKeys.schedules(debouncedSearch, filterSpec),
+    queryFn: async ({ signal }) => {
+      const res = await api.get('/schedules', {
+        params: {
+          ...(debouncedSearch ? { search: debouncedSearch } : {}),
+          ...(filterSpec ? { specialization: filterSpec } : {}),
+        },
+        signal,
+      })
+      return res.data.data || []
+    },
+  })
+
+  const bookingMutation = useMutation({
+    mutationFn: ({ mode, topic }: { mode: string; topic: string }) =>
+      api.post('/appointments', {
+        scheduleId: booking?.slot.id,
+        counselingType: mode,
+        topicOrReason: topic,
+      }),
+    onSuccess: () => {
+      toast.success(`Janji temu dengan ${booking?.counselor.fullName} berhasil dibuat! Tunggu konfirmasi konselor.`)
+      setBooking(null)
+      queryClient.invalidateQueries({ queryKey: ['schedules'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.appointments('student') })
+    },
+    onError: (error: unknown) => {
+      const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message
+      toast.error(message || 'Gagal membuat janji temu.')
+    },
+  })
 
   const handleConfirmBooking = async (mode: string, topic: string) => {
     if (!booking) return
-    setConfirming(true)
-    try {
-      await api.post('/appointments', {
-        scheduleId: booking.slot.id,
-        counselingType: mode,
-        topicOrReason: topic,
-      })
-      toast.success(`Janji temu dengan ${booking.counselor.fullName} berhasil dibuat! Tunggu konfirmasi konselor.`)
-      setBooking(null)
-      fetchCounselors()
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Gagal membuat janji temu.')
-    } finally {
-      setConfirming(false)
-    }
+    await bookingMutation.mutateAsync({ mode, topic }).catch(() => undefined)
   }
 
   return (
@@ -426,7 +431,7 @@ export default function CariKonselor() {
           booking={booking}
           onClose={() => setBooking(null)}
           onConfirm={handleConfirmBooking}
-          confirming={confirming}
+          confirming={bookingMutation.isPending}
         />
       )}
     </DashboardLayout>

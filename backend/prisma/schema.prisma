@@ -101,6 +101,8 @@ model Message {
   createdAt    DateTime @default(now())
 
   @@index([senderId, receiverId])
+  @@index([senderId, receiverId, createdAt])
+  @@index([receiverId, isRead, senderId])
 }
 
 model Counselor {
@@ -149,6 +151,9 @@ model CounselorSchedule {
   isBooked      Boolean   @default(false)
 
   appointments  Appointment[]
+
+  @@index([counselorId, availableDate])
+  @@index([isBooked, availableDate])
 }
 
 model Appointment {
@@ -168,6 +173,8 @@ model Appointment {
   meetingLink     String?           @db.VarChar(255)
   topicOrReason   String            @db.Text
   status          AppointmentStatus @default(PENDING)
+  hiddenByStudentAt   DateTime?
+  hiddenByCounselorAt DateTime?
 
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
@@ -178,6 +185,8 @@ model Appointment {
   @@index([studentId, status])
   @@index([counselorId, status])
   @@index([appointmentDate])
+  @@index([studentId, appointmentDate, status])
+  @@index([counselorId, appointmentDate, status])
 }
 
 model ClinicalNote {

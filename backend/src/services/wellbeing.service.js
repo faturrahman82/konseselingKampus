@@ -14,6 +14,12 @@ const getStudentWellbeingStatus = async (userId) => {
                         gte: new Date(new Date().setHours(0, 0, 0, 0)),
                         lte: new Date(new Date().setHours(23, 59, 59, 999)),
                     }
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 1,
+                select: {
+                    moodValue: true,
+                    createdAt: true
                 }
             }
         }
@@ -23,7 +29,9 @@ const getStudentWellbeingStatus = async (userId) => {
 
     return {
         current_wellbeing_score: student.wellbeingScore,
-        has_checked_in_today: student.moodLogs.length > 0
+        has_checked_in_today: student.moodLogs.length > 0,
+        todayMood: student.moodLogs[0]?.moodValue ?? null,
+        checkedInAt: student.moodLogs[0]?.createdAt ?? null
     };
 };
 

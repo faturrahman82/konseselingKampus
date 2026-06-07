@@ -1,5 +1,6 @@
 import { NavLink, useNavigate, Link } from 'react-router-dom'
-import { type ReactNode, useState, useRef, useEffect, useCallback } from 'react'
+import { type ReactNode, useState, useRef, useEffect } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   LayoutDashboard,
   Calendar,
@@ -25,6 +26,8 @@ import { useAuthStore } from '@/store/useAuthStore'
 import { cn } from '@/lib/utils'
 import { UniCounselIcon } from './AuthLayout'
 import api from '@/api/axios'
+import { queryKeys } from '@/api/queryKeys'
+import { getSocket } from '@/api/socket'
 import ChatBot from '@/components/ChatBot'
 
 // ---- Nav Config ----
@@ -85,21 +88,32 @@ interface Notif {
 
 const NotifBell = () => {
   const [open, setOpen] = useState(false)
-  const [notifs, setNotifs] = useState<Notif[]>([])
   const ref = useRef<HTMLDivElement>(null)
+  const queryClient = useQueryClient()
+  const { data: notifs = [] } = useQuery<Notif[]>({
+    queryKey: queryKeys.notifications,
+    queryFn: async () => (await api.get('/notifications')).data.data || [],
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+  })
+  const markReadMutation = useMutation({
+    mutationFn: (id: string) => api.patch(`/notifications/${id}/read`),
+    onSuccess: (_result, id) => {
+      queryClient.setQueryData<Notif[]>(queryKeys.notifications, current =>
+        current?.map(n => n.id === id ? { ...n, isRead: true } : n) || [])
+    },
+  })
 
-  const fetchNotifs = useCallback(async () => {
-    try {
-      const res = await api.get('/notifications')
-      setNotifs(res.data.data || [])
-    } catch { /* silent */ }
-  }, [])
-
-  useEffect(() => { fetchNotifs() }, [fetchNotifs])
   useEffect(() => {
-    const t = setInterval(fetchNotifs, 30000)
-    return () => clearInterval(t)
-  }, [fetchNotifs])
+    const socket = getSocket()
+    if (!socket) return
+    const onNotification = (notification: Notif) => {
+      queryClient.setQueryData<Notif[]>(queryKeys.notifications, current =>
+        [notification, ...(current || []).filter(n => n.id !== notification.id)])
+    }
+    socket.on('notification:new', onNotification)
+    return () => { socket.off('notification:new', onNotification) }
+  }, [queryClient])
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -110,10 +124,7 @@ const NotifBell = () => {
   }, [])
 
   const markRead = async (id: string) => {
-    try {
-      await api.patch(`/notifications/${id}/read`)
-      setNotifs(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n))
-    } catch { /* silent */ }
+    await markReadMutation.mutateAsync(id)
   }
 
   const unread = notifs.filter(n => !n.isRead).length

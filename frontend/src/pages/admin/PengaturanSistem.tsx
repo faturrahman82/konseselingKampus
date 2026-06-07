@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { DashboardLayout } from '@/layouts/DashboardLayout'
 import {
-  Settings, Bell, Shield, Loader2, CheckCircle2, AlertCircle, Save,
+  Settings, Bell, Shield, Loader2, CheckCircle2, AlertCircle, Save, Lock, Eye, EyeOff,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import api from '@/api/axios'
@@ -63,6 +63,13 @@ export default function PengaturanSistem() {
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [savingPass, setSavingPass] = useState(false)
+  const [currentPass, setCurrentPass] = useState('')
+  const [newPass, setNewPass] = useState('')
+  const [confirmPass, setConfirmPass] = useState('')
+  const [showCurrent, setShowCurrent] = useState(false)
+  const [showNew, setShowNew] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
   const showToast = (message: string, type: 'success' | 'error') => {
@@ -95,6 +102,67 @@ export default function PengaturanSistem() {
   const update = (key: keyof SystemSettings, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }))
   }
+
+  const handleSavePassword = async () => {
+    if (!currentPass || !newPass || !confirmPass) {
+      showToast('Semua field password wajib diisi.', 'error')
+      return
+    }
+    if (newPass.length < 8) {
+      showToast('Password baru minimal 8 karakter.', 'error')
+      return
+    }
+    if (newPass !== confirmPass) {
+      showToast('Konfirmasi password tidak cocok.', 'error')
+      return
+    }
+
+    setSavingPass(true)
+    try {
+      await api.patch('/auth/change-password', {
+        currentPassword: currentPass,
+        newPassword: newPass,
+      })
+      showToast('Password berhasil diperbarui!', 'success')
+      setCurrentPass('')
+      setNewPass('')
+      setConfirmPass('')
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Gagal memperbarui password.', 'error')
+    } finally {
+      setSavingPass(false)
+    }
+  }
+
+  const passInput = (
+    label: string,
+    value: string,
+    onChange: (v: string) => void,
+    show: boolean,
+    onToggle: () => void,
+    placeholder: string
+  ) => (
+    <div className="space-y-1.5">
+      <label className="text-sm font-medium text-foreground">{label}</label>
+      <div className="relative">
+        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <input
+          type={show ? 'text' : 'password'}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full h-11 pl-10 pr-10 text-sm rounded-xl border border-input bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+        <button
+          type="button"
+          onClick={onToggle}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+    </div>
+  )
 
   if (loading) return (
     <DashboardLayout role="admin">
@@ -256,6 +324,27 @@ export default function PengaturanSistem() {
                 Kelola autentikasi dan akses.
               </p>
               <div className="space-y-3">
+                <div className="space-y-4 rounded-xl border border-border p-4">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Ubah Password Admin</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Gunakan password saat ini untuk mengamankan perubahan akun.
+                    </p>
+                  </div>
+                  {passInput('Password Saat Ini', currentPass, setCurrentPass, showCurrent, () => setShowCurrent(v => !v), 'Password saat ini')}
+                  <div className="grid grid-cols-2 gap-3">
+                    {passInput('Password Baru', newPass, setNewPass, showNew, () => setShowNew(v => !v), 'Min. 8 karakter')}
+                    {passInput('Konfirmasi Password Baru', confirmPass, setConfirmPass, showConfirm, () => setShowConfirm(v => !v), 'Ulangi password baru')}
+                  </div>
+                  <button
+                    onClick={handleSavePassword}
+                    disabled={savingPass}
+                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-60"
+                  >
+                    {savingPass ? <><Loader2 className="h-4 w-4 animate-spin" />Memperbarui...</> : 'Perbarui Password'}
+                  </button>
+                </div>
+
                 <div className="flex items-center justify-between p-4 rounded-xl border border-border">
                   <div>
                     <p className="text-sm font-medium text-foreground">Autentikasi Dua Faktor</p>

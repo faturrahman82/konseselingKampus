@@ -26,16 +26,25 @@ const sendMessage = async (senderId, receiverId, content, fileUrl = null) => {
 /**
  * Service: Get chat history with a specific user
  */
-const getChatHistory = async (userId, otherUserId) => {
-    return await prisma.message.findMany({
+const getChatHistory = async (userId, otherUserId, { cursor, limit = 30 } = {}) => {
+    const take = Math.min(Math.max(Number(limit) || 30, 1), 100);
+    const messages = await prisma.message.findMany({
         where: {
             OR: [
                 { senderId: userId, receiverId: otherUserId },
                 { senderId: otherUserId, receiverId: userId },
             ],
         },
-        orderBy: { createdAt: 'asc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: take + 1,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
+    const hasMore = messages.length > take;
+    if (hasMore) messages.pop();
+    return {
+        data: messages.reverse(),
+        nextCursor: hasMore ? messages[0]?.id || null : null,
+    };
 };
 
 /**

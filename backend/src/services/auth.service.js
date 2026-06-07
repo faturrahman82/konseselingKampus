@@ -225,4 +225,35 @@ const resetPassword = async (token, newPassword) => {
     return { message: 'Password has been reset successfully.' };
 };
 
-module.exports = { register, login, completeProfile, getMe, forgotPassword, resetPassword };
+const changePassword = async (userId, currentPassword, newPassword) => {
+    if (!currentPassword || !newPassword) {
+        throw new AppError('Current password and new password are required.', 400);
+    }
+
+    if (newPassword.length < 8) {
+        throw new AppError('New password must be at least 8 characters.', 400);
+    }
+
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+    });
+
+    if (!user) {
+        throw new AppError('User not found.', 404);
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!isMatch) {
+        throw new AppError('Current password incorrectly provided.', 400);
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+        where: { id: userId },
+        data: { password_hash: hashedPassword },
+    });
+
+    return { message: 'Password updated successfully.' };
+};
+
+module.exports = { register, login, completeProfile, getMe, forgotPassword, resetPassword, changePassword };

@@ -15,7 +15,7 @@ const createAppointment = async (studentUserId, { scheduleId, counselingType, to
         throw new AppError('Student profile not found.', 404);
     }
 
-    // Ambil schedule & cek ketersediaan
+    // Ambil schedule untuk detail appointment dan preferensi konselor.
     const schedule = await prisma.counselorSchedule.findUnique({
         where: { id: scheduleId },
         include: { counselor: true }
@@ -25,12 +25,15 @@ const createAppointment = async (studentUserId, { scheduleId, counselingType, to
         throw new AppError('Schedule not found.', 404);
     }
 
-    if (schedule.isBooked) {
-        throw new AppError('This schedule has already been booked.', 409);
-    }
-
-    // Buat appointment + update isBooked dalam 1 transaksi
+    // Klaim slot dan buat appointment secara atomik agar booking bersamaan aman.
     const result = await prisma.$transaction(async (tx) => {
+        const claimed = await tx.counselorSchedule.updateMany({
+            where: { id: scheduleId, isBooked: false },
+            data: { isBooked: true },
+        });
+        if (claimed.count !== 1) {
+            throw new AppError('Jadwal ini baru saja diambil mahasiswa lain.', 409);
+        }
         // Tentukan status awal berdasarkan preferensi konselor
         const initialStatus = schedule.counselor.autoApprove ? 'APPROVED' : 'PENDING';
         
@@ -52,11 +55,6 @@ const createAppointment = async (studentUserId, { scheduleId, counselingType, to
                 meetingLink: finalMeetingLink,
                 status: initialStatus,
             },
-        });
-
-        await tx.counselorSchedule.update({
-            where: { id: scheduleId },
-            data: { isBooked: true },
         });
 
         return appointment;
@@ -95,7 +93,7 @@ const updateAppointmentStatus = async (counselorUserId, appointmentId, { status,
 
     // Validasi transisi status yang valid
     const validTransitions = {
-        PENDING: ['APPROVED', 'REJECTED'],
+        PENDING: ['APPROVED', 'REJECTED', 'CANCELLED'],
         APPROVED: ['COMPLETED', 'CANCELLED'],
     };
 
@@ -169,7 +167,10 @@ const getStudentAppointments = async (studentUserId) => {
     }
 
     const appointments = await prisma.appointment.findMany({
-        where: { studentId: student.id },
+        where: {
+            studentId: student.id,
+            hiddenByStudentAt: null,
+        },
         include: {
             counselor: {
                 select: { fullName: true, specialization: true, avatarUrl: true },
@@ -195,7 +196,10 @@ const getCounselorAppointments = async (counselorUserId) => {
     }
 
     const appointments = await prisma.appointment.findMany({
-        where: { counselorId: counselor.id },
+        where: {
+            counselorId: counselor.id,
+            hiddenByCounselorAt: null,
+        },
         include: {
             student: {
                 select: { fullName: true, nim: true, faculty: true, major: true, avatarUrl: true },
@@ -300,7 +304,7 @@ const getMyStudents = async (counselorUserId) => {
 
     // Ambil semua appointment konselor ini (urut dari terbaru)
     const appointments = await prisma.appointment.findMany({
-        where: { counselorId: counselor.id },
+        where: { counselorId: counselor.id, hiddenByCounselorAt: null },
         include: {
             student: {
                 select: {
@@ -361,7 +365,7 @@ const getStudentDetailForCounselor = async (counselorUserId, studentId) => {
         include: {
             user: { select: { email: true } },
             appointments: {
-                where: { counselorId: counselor.id },
+                where: { counselorId: counselor.id, hiddenByCounselorAt: null },
                 include: { clinicalNote: true },
                 orderBy: { appointmentDate: 'desc' }
             }
@@ -427,6 +431,62 @@ const cancelAppointmentByStudent = async (studentUserId, appointmentId) => {
     return result;
 };
 
+const hideStudentHistory = async (studentUserId, appointmentId) => {
+    const student = await prisma.student.findUnique({
+        where: { userId: studentUserId },
+    });
+
+    if (!student) {
+        throw new AppError('Student profile not found.', 404);
+    }
+
+    const appointment = await prisma.appointment.findFirst({
+        where: {
+            id: appointmentId,
+            studentId: student.id,
+            status: { in: ['COMPLETED', 'CANCELLED', 'REJECTED'] },
+            hiddenByStudentAt: null,
+        },
+    });
+
+    if (!appointment) {
+        throw new AppError('Riwayat sesi tidak ditemukan atau belum dapat dihapus.', 404);
+    }
+
+    return prisma.appointment.update({
+        where: { id: appointmentId },
+        data: { hiddenByStudentAt: new Date() },
+    });
+};
+
+const hideCounselorHistory = async (counselorUserId, appointmentId) => {
+    const counselor = await prisma.counselor.findUnique({
+        where: { userId: counselorUserId },
+    });
+
+    if (!counselor) {
+        throw new AppError('Counselor profile not found.', 404);
+    }
+
+    const appointment = await prisma.appointment.findFirst({
+        where: {
+            id: appointmentId,
+            counselorId: counselor.id,
+            status: { in: ['COMPLETED', 'CANCELLED', 'REJECTED'] },
+            hiddenByCounselorAt: null,
+        },
+    });
+
+    if (!appointment) {
+        throw new AppError('Riwayat sesi tidak ditemukan atau belum dapat dihapus.', 404);
+    }
+
+    return prisma.appointment.update({
+        where: { id: appointmentId },
+        data: { hiddenByCounselorAt: new Date() },
+    });
+};
+
 module.exports = {
     createAppointment,
     updateAppointmentStatus,
@@ -437,4 +497,6 @@ module.exports = {
     getStudentDetailForCounselor,
     cancelAppointmentByStudent,
     updateMeetingLink,
+    hideStudentHistory,
+    hideCounselorHistory,
 };

@@ -2,7 +2,7 @@ import api from '@/api/axios'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useNavigate, Link } from 'react-router-dom'
 import { AuthLayout } from '@/layouts/AuthLayout'
-import { LoginForm } from '@/components/organisms/LoginForm'
+import { LoginForm, type LoginFormValues } from '@/components/organisms/LoginForm'
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 
@@ -19,7 +19,7 @@ export default function Login() {
     }
   }, [])
 
-  const handleLogin = async (data: any) => {
+  const handleLogin = async (data: LoginFormValues) => {
     setLoading(true)
     try {
       // Backend response: { success, message, data: { token, user } }
@@ -44,8 +44,11 @@ export default function Login() {
         navigate(isProfileComplete ? '/mahasiswa/dasbor' : '/lengkapi-profil')
       }
 
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Login gagal. Periksa email dan password Anda.')
+    } catch (error: unknown) {
+      const message = typeof error === 'object' && error !== null && 'response' in error
+        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+        : undefined
+      toast.error(message || 'Login gagal. Periksa email dan password Anda.')
     } finally {
       setLoading(false)
     }
@@ -55,6 +58,7 @@ export default function Login() {
     <AuthLayout
       title="Selamat Datang Kembali"
       subtitle="Silakan masuk ke akun Anda untuk melanjutkan."
+      showHomeLink
       footer={
         <span>
           Belum punya akun?{' '}

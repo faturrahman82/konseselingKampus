@@ -20,7 +20,10 @@ const errorHandler = (err, req, res, next) => {
 
     res.status(statusCode).json({
         success: false,
-        error: message,
+        message: statusCode >= 500 && process.env.NODE_ENV === 'production'
+            ? 'Terjadi kesalahan pada server.'
+            : message,
+        code: err.code || undefined,
         ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
     });
 };

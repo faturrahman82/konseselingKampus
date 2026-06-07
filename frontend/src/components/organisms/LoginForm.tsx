@@ -2,7 +2,8 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { Link } from 'react-router-dom'
-import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { Mail, Lock, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react'
 import { Button } from '../atoms/Button'
 import { cn } from '@/lib/utils'
 
@@ -11,7 +12,7 @@ const loginSchema = z.object({
   password: z.string().min(6, 'Password minimal 6 karakter'),
 })
 
-type LoginFormValues = z.infer<typeof loginSchema>
+export type LoginFormValues = z.infer<typeof loginSchema>
 
 interface LoginFormProps {
   onSubmit: (data: LoginFormValues) => Promise<void>
@@ -19,6 +20,7 @@ interface LoginFormProps {
 }
 
 export const LoginForm = ({ onSubmit, isLoading }: LoginFormProps) => {
+  const [showPassword, setShowPassword] = useState(false)
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
   })
@@ -64,15 +66,24 @@ export const LoginForm = ({ onSubmit, isLoading }: LoginFormProps) => {
             <Lock className="h-4 w-4 text-muted-foreground" />
           </div>
           <input
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             placeholder="password123"
             {...register('password')}
             className={cn(
-              'w-full h-10 pl-9 pr-3 py-2 text-sm rounded-md border bg-background',
+              'w-full h-10 pl-9 pr-10 py-2 text-sm rounded-md border bg-background',
               'placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors',
               errors.password ? 'border-destructive' : 'border-input'
             )}
           />
+          <button
+            type="button"
+            onClick={() => setShowPassword(value => !value)}
+            className="absolute inset-y-0 right-2 flex items-center justify-center p-1.5 rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+            title={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
         </div>
         {errors.password && (
           <p className="text-xs text-destructive">{errors.password.message}</p>

@@ -14,61 +14,34 @@ const getStudentDashboard = async (userId) => {
 
     if (!student) throw new AppError('Student profile not found.', 404);
 
-    // 1. Hitung Statistik
-    const totalSessions = await prisma.appointment.count({
-        where: { studentId: student.id }
-    });
-
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
 
-    const sessionsThisMonth = await prisma.appointment.count({
-        where: { 
-            studentId: student.id,
-            status: 'COMPLETED',
-            appointmentDate: { gte: startOfMonth }
-        }
-    });
-
-    // 2. Ambil Jadwal Mendatang (1 terdekat yang APPROVED)
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
-    const upcomingAppointment = await prisma.appointment.findFirst({
-        where: { 
-            studentId: student.id,
-            status: 'APPROVED',
-            appointmentDate: { gte: startOfToday }
-        },
-        include: {
-            counselor: { select: { fullName: true, specialization: true, avatarUrl: true } }
-        },
-        orderBy: [
-            { appointmentDate: 'asc' },
-            { startTime: 'asc' }
-        ]
-    });
-
-    // 3. Riwayat Terbaru (3 terakhir)
-    const recentHistory = await prisma.appointment.findMany({
-        where: { studentId: student.id },
-        include: {
-            counselor: { select: { fullName: true, specialization: true } }
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 3
-    });
-
-    // 4. Cek Mood Check-in Hari Ini
     const today = new Date();
     today.setHours(0,0,0,0);
-    const hasCheckedInToday = await prisma.moodLog.count({
-        where: { 
-            studentId: student.id,
-            createdAt: { gte: today }
-        }
-    }) > 0;
+    const [totalSessions, sessionsThisMonth, upcomingAppointment, recentHistory, moodCount] = await Promise.all([
+        prisma.appointment.count({ where: { studentId: student.id } }),
+        prisma.appointment.count({
+            where: { studentId: student.id, status: 'COMPLETED', appointmentDate: { gte: startOfMonth } }
+        }),
+        prisma.appointment.findFirst({
+            where: { studentId: student.id, status: 'APPROVED', appointmentDate: { gte: startOfToday } },
+            include: { counselor: { select: { fullName: true, specialization: true, avatarUrl: true } } },
+            orderBy: [{ appointmentDate: 'asc' }, { startTime: 'asc' }]
+        }),
+        prisma.appointment.findMany({
+            where: { studentId: student.id },
+            include: { counselor: { select: { fullName: true, specialization: true } } },
+            orderBy: { createdAt: 'desc' },
+            take: 3
+        }),
+        prisma.moodLog.count({ where: { studentId: student.id, createdAt: { gte: today } } }),
+    ]);
+    const hasCheckedInToday = moodCount > 0;
 
     // 5. Smart AI Insight (Logic Sederhana)
     const getMentalHealthInsight = (score) => {
@@ -105,67 +78,39 @@ const getCounselorDashboard = async (userId) => {
 
     if (!counselor) throw new AppError('Counselor profile not found.', 404);
 
-    // 1. Metrics dasar
-    const pendingCount = await prisma.appointment.count({
-        where: { counselorId: counselor.id, status: 'PENDING' }
-    });
-
     const today = new Date();
     today.setHours(0,0,0,0);
-    const sessionsToday = await prisma.appointment.count({
-        where: { 
-            counselorId: counselor.id, 
-            appointmentDate: today,
-            status: 'APPROVED'
-        }
-    });
-
-    const uniqueStudents = await prisma.appointment.groupBy({
-        by: ['studentId'],
-        where: { counselorId: counselor.id }
-    });
-
-    // 2. Permintaan Janji Temu (3 terbaru)
-    const pendingRequests = await prisma.appointment.findMany({
-        where: { counselorId: counselor.id, status: 'PENDING' },
-        include: {
-            student: { select: { fullName: true, major: true, avatarUrl: true } }
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 3
-    });
-
-    // 3. Jadwal Hari Ini
-    const todaySchedule = await prisma.appointment.findMany({
-        where: { 
-            counselorId: counselor.id, 
-            appointmentDate: today,
-            status: 'APPROVED'
-        },
-        include: {
-            student: { select: { fullName: true, major: true } }
-        },
-        orderBy: { startTime: 'asc' }
-    });
-
-    // 4. Urgent Alerts (Mahasiswa bimbingan dengan skor < 40)
-    const urgentAlerts = await prisma.appointment.findMany({
-        where: {
-            counselorId: counselor.id,
-            student: { wellbeingScore: { lt: 40 } }
-        },
-        include: {
-            student: { select: { fullName: true, wellbeingScore: true, avatarUrl: true, id: true } }
-        },
-        distinct: ['studentId'],
-        take: 5
-    });
-
-    // 4. Hitung total jam konseling dari sesi COMPLETED
-    const completedAppts = await prisma.appointment.findMany({
-        where: { counselorId: counselor.id, status: 'COMPLETED' },
-        select: { startTime: true, endTime: true }
-    });
+    const [
+        pendingCount, sessionsToday, uniqueStudents, pendingRequests,
+        todaySchedule, urgentAlerts, completedAppts,
+    ] = await Promise.all([
+        prisma.appointment.count({ where: { counselorId: counselor.id, status: 'PENDING' } }),
+        prisma.appointment.count({
+            where: { counselorId: counselor.id, appointmentDate: today, status: 'APPROVED' }
+        }),
+        prisma.appointment.groupBy({ by: ['studentId'], where: { counselorId: counselor.id } }),
+        prisma.appointment.findMany({
+            where: { counselorId: counselor.id, status: 'PENDING' },
+            include: { student: { select: { fullName: true, major: true, avatarUrl: true } } },
+            orderBy: { createdAt: 'desc' },
+            take: 3
+        }),
+        prisma.appointment.findMany({
+            where: { counselorId: counselor.id, appointmentDate: today, status: 'APPROVED' },
+            include: { student: { select: { fullName: true, major: true } } },
+            orderBy: { startTime: 'asc' }
+        }),
+        prisma.appointment.findMany({
+            where: { counselorId: counselor.id, student: { wellbeingScore: { lt: 40 } } },
+            include: { student: { select: { fullName: true, wellbeingScore: true, avatarUrl: true, id: true } } },
+            distinct: ['studentId'],
+            take: 5
+        }),
+        prisma.appointment.findMany({
+            where: { counselorId: counselor.id, status: 'COMPLETED' },
+            select: { startTime: true, endTime: true }
+        }),
+    ]);
     const counselingHours = Math.round(completedAppts.reduce((sum, a) => {
         try {
             const diff = (new Date(a.endTime).getTime() - new Date(a.startTime).getTime()) / (1000 * 60 * 60);
@@ -190,17 +135,16 @@ const getCounselorDashboard = async (userId) => {
  * Dashboard Data for Admin
  */
 const getAdminDashboard = async () => {
-    const totalStudents = await prisma.student.count();
-    const activeCounselors = await prisma.counselor.count({ where: { isActive: true } });
-
-    const counselors = await prisma.counselor.findMany({
-        include: {
-            _count: {
-                select: { appointments: { where: { status: 'APPROVED' } } }
-            },
-            user: { select: { email: true } }
-        }
-    });
+    const [totalStudents, activeCounselors, counselors] = await Promise.all([
+        prisma.student.count(),
+        prisma.counselor.count({ where: { isActive: true } }),
+        prisma.counselor.findMany({
+            include: {
+                _count: { select: { appointments: { where: { status: 'APPROVED' } } } },
+                user: { select: { email: true } }
+            }
+        }),
+    ]);
 
     const counselorDirectory = counselors.map(c => ({
         id: c.id,

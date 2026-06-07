@@ -22,6 +22,7 @@ router.get('/', (req, res) => {
             'GET /api/auth/me',
             'POST /api/auth/forgot-password',
             'POST /api/auth/reset-password',
+            'PATCH /api/auth/change-password',
         ],
     });
 });
@@ -170,6 +171,17 @@ router.post('/forgot-password', authController.forgotPassword);
  *         description: Token tidak valid atau kadaluarsa
  */
 router.post('/reset-password', authController.resetPassword);
+
+/**
+ * @swagger
+ * /api/auth/change-password:
+ *   patch:
+ *     summary: Ganti password akun login saat ini (semua role)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.patch('/change-password', verifyToken, authController.changePassword);
 
 /**
  * @swagger

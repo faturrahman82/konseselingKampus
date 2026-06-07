@@ -30,6 +30,7 @@ interface Schedule {
 
 interface Appointment {
   id: string
+  scheduleId: string
   appointmentDate: string
   startTime: string
   endTime: string
@@ -39,6 +40,11 @@ interface Appointment {
   topicOrReason: string
   student: { fullName: string; major?: string }
 }
+
+type ConfirmAction =
+  | { type: 'deleteSlot'; id: string }
+  | { type: 'cancelBookedSlot'; id: string }
+  | { type: 'deleteHistory'; id: string }
 
 // ─── Helpers ─────────────────────────────────────────────────
 const toDateStr = (iso: string) => {
@@ -334,7 +340,7 @@ const AddSlotModal = ({
       })
       onSaved()
     } catch (e: any) {
-      setErr(e.response?.data?.message || 'Gagal menambah slot.')
+      setErr(e.response?.data?.message || e.response?.data?.error || 'Gagal menambah slot.')
     } finally {
       setSaving(false)
     }
@@ -405,6 +411,53 @@ const AddSlotModal = ({
 }
 
 // ─── Main Page ────────────────────────────────────────────────
+const ConfirmModal = ({
+  title,
+  description,
+  confirmLabel,
+  loading,
+  onClose,
+  onConfirm,
+}: {
+  title: string
+  description: string
+  confirmLabel: string
+  loading: boolean
+  onClose: () => void
+  onConfirm: () => void
+}) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+    <div className="bg-card w-full max-w-md rounded-2xl shadow-xl border border-border">
+      <div className="flex items-start gap-4 p-6">
+        <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+          <AlertCircle className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <h2 className="text-base font-bold text-foreground">{title}</h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
+        </div>
+      </div>
+
+      <div className="flex gap-3 p-6 pt-0">
+        <button
+          onClick={onClose}
+          disabled={loading}
+          className="flex-1 py-2.5 rounded-xl text-sm font-medium border border-border text-foreground hover:bg-secondary transition-colors disabled:opacity-60"
+        >
+          Batal
+        </button>
+        <button
+          onClick={onConfirm}
+          disabled={loading}
+          className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+        >
+          {loading ? <><Loader2 className="h-4 w-4 animate-spin" />Memproses...</> : confirmLabel}
+        </button>
+      </div>
+    </div>
+  </div>
+)
+
 export default function KonselorJadwal() {
   const today = new Date()
   const [year,  setYear]  = useState(today.getFullYear())
@@ -416,11 +469,14 @@ export default function KonselorJadwal() {
   const [loading,      setLoading]      = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
   const [deleting,     setDeleting]     = useState<string | null>(null)
+  const [cancellingBookedSlot, setCancellingBookedSlot] = useState<string | null>(null)
   const [approveTarget, setApproveTarget] = useState<Appointment | null>(null)
   const [editLinkTarget, setEditLinkTarget] = useState<string | null>(null)
   const [editLinkValue, setEditLinkValue] = useState('')
   const [savingLink, setSavingLink] = useState(false)
   const [completeTarget, setCompleteTarget] = useState<Appointment | null>(null)
+  const [deletingHistory, setDeletingHistory] = useState<string | null>(null)
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
   const [toast,        setToast]        = useState<{ msg: string; ok: boolean } | null>(null)
 
   const showToast = (msg: string, ok = true) => {
@@ -480,12 +536,12 @@ export default function KonselorJadwal() {
   const dayAppointments = appointments.filter(a => toDateStr(a.appointmentDate) === selectedDateStr)
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Hapus slot ini?')) return
     setDeleting(id)
     try {
       await api.delete(`/schedules/${id}`)
       showToast('Jadwal berhasil dihapus.')
       fetchAll()
+      setConfirmAction(null)
     } catch (e: any) {
       showToast(e.response?.data?.message || 'Gagal menghapus slot.', false)
     } finally {
@@ -493,13 +549,56 @@ export default function KonselorJadwal() {
     }
   }
 
-  const handleStatusUpdate = async (apptId: string, status: 'REJECTED' | 'COMPLETED') => {
+  const handleStatusUpdate = async (apptId: string, status: 'REJECTED' | 'COMPLETED' | 'CANCELLED') => {
     try {
       await api.put(`/appointments/${apptId}/status`, { status })
-      showToast(status === 'COMPLETED' ? 'Sesi ditandai selesai.' : 'Sesi ditolak.')
+      showToast(
+        status === 'COMPLETED'
+          ? 'Sesi ditandai selesai.'
+          : status === 'CANCELLED'
+            ? 'Sesi berhasil dibatalkan dan slot kembali tersedia.'
+            : 'Sesi ditolak.'
+      )
       fetchAll()
     } catch (e: any) {
       showToast(e.response?.data?.message || 'Gagal mengubah status.', false)
+    }
+  }
+
+  const handleCancelBookedSlot = async (scheduleId: string) => {
+    const appointment = appointments.find(a =>
+      a.scheduleId === scheduleId && (a.status === 'PENDING' || a.status === 'APPROVED')
+    )
+
+    if (!appointment) {
+      showToast('Data janji temu untuk slot ini tidak ditemukan.', false)
+      return
+    }
+
+    setCancellingBookedSlot(scheduleId)
+    try {
+      await api.put(`/appointments/${appointment.id}/status`, { status: 'CANCELLED' })
+      showToast('Sesi berhasil dibatalkan dan slot kembali tersedia.')
+      fetchAll()
+      setConfirmAction(null)
+    } catch (e: any) {
+      showToast(e.response?.data?.message || 'Gagal membatalkan sesi.', false)
+    } finally {
+      setCancellingBookedSlot(null)
+    }
+  }
+
+  const handleDeleteHistory = async (apptId: string) => {
+    setDeletingHistory(apptId)
+    try {
+      await api.delete(`/appointments/counselor-history/${apptId}`)
+      showToast('Riwayat sesi berhasil dihapus.')
+      fetchAll()
+      setConfirmAction(null)
+    } catch (e: any) {
+      showToast(e.response?.data?.message || 'Gagal menghapus riwayat sesi.', false)
+    } finally {
+      setDeletingHistory(null)
     }
   }
 
@@ -522,6 +621,29 @@ export default function KonselorJadwal() {
     }
   }
 
+  const confirmModalCopy = confirmAction?.type === 'deleteSlot'
+    ? {
+        title: 'Hapus Slot Jadwal?',
+        description: 'Slot jadwal yang masih bebas akan dihapus dari daftar ketersediaan Anda.',
+        confirmLabel: 'Hapus Slot',
+        loading: deleting === confirmAction.id,
+      }
+    : confirmAction?.type === 'cancelBookedSlot'
+      ? {
+          title: 'Batalkan Sesi?',
+          description: 'Janji temu pada slot ini akan dibatalkan dan slot akan kembali tersedia untuk mahasiswa.',
+          confirmLabel: 'Batalkan Sesi',
+          loading: cancellingBookedSlot === confirmAction.id,
+        }
+      : confirmAction?.type === 'deleteHistory'
+        ? {
+            title: 'Hapus Riwayat Sesi?',
+            description: 'Riwayat ini akan disembunyikan dari tampilan Anda. Data utama tetap tersimpan untuk kebutuhan sistem.',
+            confirmLabel: 'Hapus Riwayat',
+            loading: deletingHistory === confirmAction.id,
+          }
+        : null
+
   if (loading) return (
     <DashboardLayout role="counselor">
       <div className="flex items-center justify-center h-64">
@@ -543,6 +665,18 @@ export default function KonselorJadwal() {
         </div>
       )}
 
+      {confirmAction && confirmModalCopy && (
+        <ConfirmModal
+          {...confirmModalCopy}
+          onClose={() => setConfirmAction(null)}
+          onConfirm={() => {
+            if (confirmAction.type === 'deleteSlot') handleDelete(confirmAction.id)
+            if (confirmAction.type === 'cancelBookedSlot') handleCancelBookedSlot(confirmAction.id)
+            if (confirmAction.type === 'deleteHistory') handleDeleteHistory(confirmAction.id)
+          }}
+        />
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -556,7 +690,7 @@ export default function KonselorJadwal() {
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
         >
           <Plus className="h-4 w-4" />
-          + Jadwal Baru
+          Jadwal Baru
         </button>
       </div>
 
@@ -679,13 +813,26 @@ export default function KonselorJadwal() {
                       )}
                       {!s.isBooked && (
                         <button
-                          onClick={() => handleDelete(s.id)}
+                          onClick={() => setConfirmAction({ type: 'deleteSlot', id: s.id })}
                           disabled={deleting === s.id}
                           className="p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
                         >
                           {deleting === s.id
                             ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             : <Trash2 className="h-3.5 w-3.5" />
+                          }
+                        </button>
+                      )}
+                      {s.isBooked && (
+                        <button
+                          onClick={() => setConfirmAction({ type: 'cancelBookedSlot', id: s.id })}
+                          disabled={cancellingBookedSlot === s.id}
+                          className="px-2 py-1 rounded-md text-xs font-medium border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50 flex items-center gap-1"
+                          title="Batalkan sesi pada slot ini"
+                        >
+                          {cancellingBookedSlot === s.id
+                            ? <><Loader2 className="h-3 w-3 animate-spin" />Batal...</>
+                            : <><CalendarX className="h-3 w-3" />Batalkan</>
                           }
                         </button>
                       )}
@@ -807,6 +954,18 @@ export default function KonselorJadwal() {
                             )
                           )}
                         </div>
+                      )}
+                      {['COMPLETED', 'CANCELLED', 'REJECTED'].includes(a.status) && (
+                        <button
+                          onClick={() => setConfirmAction({ type: 'deleteHistory', id: a.id })}
+                          disabled={deletingHistory === a.id}
+                          className="w-full py-1.5 rounded-lg text-xs font-medium border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
+                        >
+                          {deletingHistory === a.id
+                            ? <><Loader2 className="h-3 w-3 animate-spin" />Menghapus...</>
+                            : <><Trash2 className="h-3 w-3" />Hapus Riwayat</>
+                          }
+                        </button>
                       )}
                     </div>
                   )

@@ -119,7 +119,7 @@ export default function MahasiswaPengaturan() {
     }
     setSavingPass(true)
     try {
-      await api.post('/students/change-password', {
+      await api.patch('/auth/change-password', {
         currentPassword: currentPass,
         newPassword: newPass,
       })

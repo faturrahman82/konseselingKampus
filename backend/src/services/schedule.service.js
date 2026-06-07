@@ -1,10 +1,79 @@
 const prisma = require('../config/database');
 const { AppError } = require('../utils/error.handler');
 
+const parseTime = (time) => {
+    if (!time) return null;
+    const normalized = time.length === 5 ? `${time}:00` : time;
+    return new Date(`1970-01-01T${normalized}`);
+};
+
+const timeToMinutes = (value) => {
+    if (!value) return null;
+
+    if (value instanceof Date) {
+        return value.getHours() * 60 + value.getMinutes();
+    }
+
+    const str = String(value);
+    const timePart = str.includes('T') ? str.split('T')[1] : str;
+    const [hour, minute] = timePart.slice(0, 5).split(':').map(Number);
+
+    if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
+    return hour * 60 + minute;
+};
+
+const formatTimeLabel = (value) => {
+    const minutes = timeToMinutes(value);
+    if (minutes === null) return '-';
+
+    const hour = String(Math.floor(minutes / 60)).padStart(2, '0');
+    const minute = String(minutes % 60).padStart(2, '0');
+    return `${hour}.${minute}`;
+};
+
+const isScheduleBlocking = (schedule) => {
+    if (!schedule.isBooked) return true;
+
+    return schedule.appointments?.some((appointment) =>
+        appointment.status === 'PENDING' || appointment.status === 'APPROVED'
+    );
+};
+
 /**
  * Service: Tambah Jadwal Konselor (dengan validasi bentrok waktu)
  */
 const createSchedule = async (counselorUserId, { availableDate, startTime, endTime }) => {
+    const normalizedStart = parseTime(startTime);
+    const normalizedEnd = parseTime(endTime);
+    const scheduleDate = new Date(availableDate);
+
+    if (!availableDate || !normalizedStart || !normalizedEnd) {
+        throw new AppError('Tanggal, jam mulai, dan jam selesai wajib diisi.', 400);
+    }
+
+    if (normalizedStart >= normalizedEnd) {
+        throw new AppError('Jam mulai harus lebih awal dari jam selesai.', 400);
+    }
+
+    const now = new Date();
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    const selectedDay = new Date(scheduleDate);
+    selectedDay.setHours(0, 0, 0, 0);
+
+    if (selectedDay < today) {
+        throw new AppError('Tidak dapat membuat jadwal pada tanggal yang sudah lewat.', 400);
+    }
+
+    if (selectedDay.getTime() === today.getTime()) {
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const startMinutes = timeToMinutes(normalizedStart);
+
+        if (startMinutes <= currentMinutes) {
+            throw new AppError('Jam mulai sudah lewat. Pilih jam yang lebih besar dari waktu sekarang.', 400);
+        }
+    }
+
     // Cari profil counselor berdasarkan userId
     const counselor = await prisma.counselor.findUnique({
         where: { userId: counselorUserId },
@@ -14,30 +83,44 @@ const createSchedule = async (counselorUserId, { availableDate, startTime, endTi
         throw new AppError('Counselor profile not found.', 404);
     }
 
-    // Cek bentrok jadwal pada tanggal yang sama
-    const conflicting = await prisma.counselorSchedule.findFirst({
+    const sameDaySchedules = await prisma.counselorSchedule.findMany({
         where: {
             counselorId: counselor.id,
-            availableDate: new Date(availableDate),
-            OR: [
-                {
-                    startTime: { lte: new Date(`1970-01-01T${endTime}`) },
-                    endTime: { gte: new Date(`1970-01-01T${startTime}`) },
+            availableDate: scheduleDate,
+        },
+        include: {
+            appointments: {
+                select: {
+                    status: true,
                 },
-            ],
+            },
         },
     });
 
+    const newStartMinutes = timeToMinutes(normalizedStart);
+    const newEndMinutes = timeToMinutes(normalizedEnd);
+
+    const conflicting = sameDaySchedules.filter(isScheduleBlocking).find((schedule) => {
+        const oldStartMinutes = timeToMinutes(schedule.startTime);
+        const oldEndMinutes = timeToMinutes(schedule.endTime);
+
+        if (oldStartMinutes === null || oldEndMinutes === null) return false;
+        return newStartMinutes < oldEndMinutes && newEndMinutes > oldStartMinutes;
+    });
+
     if (conflicting) {
-        throw new AppError('Schedule conflict: You already have a schedule at this time.', 409);
+        throw new AppError(
+            `Jadwal bentrok dengan slot ${formatTimeLabel(conflicting.startTime)} - ${formatTimeLabel(conflicting.endTime)}.`,
+            409
+        );
     }
 
     const schedule = await prisma.counselorSchedule.create({
         data: {
             counselorId: counselor.id,
-            availableDate: new Date(availableDate),
-            startTime: new Date(`1970-01-01T${startTime}`),
-            endTime: new Date(`1970-01-01T${endTime}`),
+            availableDate: scheduleDate,
+            startTime: normalizedStart,
+            endTime: normalizedEnd,
         },
     });
 
@@ -124,10 +207,19 @@ const getMySchedules = async (counselorUserId) => {
 
     const schedules = await prisma.counselorSchedule.findMany({
         where: { counselorId: counselor.id },
+        include: {
+            appointments: {
+                select: {
+                    id: true,
+                    status: true,
+                },
+                orderBy: { createdAt: 'desc' },
+            },
+        },
         orderBy: { availableDate: 'asc' },
     });
 
-    return schedules;
+    return schedules.filter(isScheduleBlocking);
 };
 
 /**

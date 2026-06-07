@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { DashboardLayout } from '@/layouts/DashboardLayout'
 import {
   Calendar, Clock, Video, MapPin, Search, Loader2,
-  AlertCircle, X, XCircle, Star,
+  AlertCircle, X, XCircle, Star, Trash2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import api from '@/api/axios'
@@ -23,6 +23,10 @@ interface Appointment {
     avatarUrl?: string
   }
 }
+
+type ConfirmAction =
+  | { type: 'cancelAppointment'; id: string }
+  | { type: 'deleteHistory'; id: string }
 
 // ── Helpers ──
 const AVATAR_COLORS = ['bg-teal-500', 'bg-violet-500', 'bg-blue-500', 'bg-rose-500', 'bg-amber-500']
@@ -242,9 +246,13 @@ const SessionCard = ({
 const HistoryItem = ({
   appt,
   onReview,
+  onDelete,
+  deleting,
 }: {
   appt: Appointment
   onReview: (id: string, counselorName: string) => void
+  onDelete: (id: string) => void
+  deleting: boolean
 }) => {
   const color = getColor(appt.counselor?.fullName || '')
   const initials = getInitials(appt.counselor?.fullName || '')
@@ -272,9 +280,63 @@ const HistoryItem = ({
       ) : (
         <XCircle className="h-4 w-4 text-red-400 shrink-0" />
       )}
+      <button
+        onClick={() => onDelete(appt.id)}
+        disabled={deleting}
+        className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50 shrink-0"
+        title="Hapus riwayat"
+      >
+        {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+      </button>
     </div>
   )
 }
+
+const ConfirmModal = ({
+  title,
+  description,
+  confirmLabel,
+  loading,
+  onClose,
+  onConfirm,
+}: {
+  title: string
+  description: string
+  confirmLabel: string
+  loading: boolean
+  onClose: () => void
+  onConfirm: () => void
+}) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+    <div className="bg-card w-full max-w-md rounded-2xl shadow-xl border border-border">
+      <div className="flex items-start gap-4 p-6">
+        <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+          <AlertCircle className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <h2 className="text-base font-bold text-foreground">{title}</h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
+        </div>
+      </div>
+      <div className="flex gap-3 p-6 pt-0">
+        <button
+          onClick={onClose}
+          disabled={loading}
+          className="flex-1 py-2.5 rounded-xl text-sm font-medium border border-border text-foreground hover:bg-secondary transition-colors disabled:opacity-60"
+        >
+          Batal
+        </button>
+        <button
+          onClick={onConfirm}
+          disabled={loading}
+          className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+        >
+          {loading ? <><Loader2 className="h-4 w-4 animate-spin" />Memproses...</> : confirmLabel}
+        </button>
+      </div>
+    </div>
+  </div>
+)
 
 // ── Main Page ──
 export default function JadwalSaya() {
@@ -285,6 +347,8 @@ export default function JadwalSaya() {
   const [historySearch, setHistorySearch] = useState('')
   const [reviewTarget, setReviewTarget] = useState<{ id: string; name: string } | null>(null)
   const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set())
+  const [deletingHistory, setDeletingHistory] = useState<string | null>(null)
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
 
   const fetchAppointments = async () => {
     try {
@@ -301,18 +365,48 @@ export default function JadwalSaya() {
   useEffect(() => { fetchAppointments() }, [])
 
   const handleCancel = async (id: string) => {
-    if (!confirm('Yakin ingin membatalkan janji temu ini?')) return
     setCancelling(id)
     try {
       await api.delete(`/appointments/${id}`)
       toast.success('Janji temu berhasil dibatalkan.')
       await fetchAppointments()
+      setConfirmAction(null)
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Gagal membatalkan janji temu.')
     } finally {
       setCancelling(null)
     }
   }
+
+  const handleDeleteHistory = async (id: string) => {
+    setDeletingHistory(id)
+    try {
+      await api.delete(`/appointments/student-history/${id}`)
+      toast.success('Riwayat sesi berhasil dihapus.')
+      await fetchAppointments()
+      setConfirmAction(null)
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Gagal menghapus riwayat sesi.')
+    } finally {
+      setDeletingHistory(null)
+    }
+  }
+
+  const confirmModalCopy = confirmAction?.type === 'cancelAppointment'
+    ? {
+        title: 'Batalkan Janji Temu?',
+        description: 'Janji temu akan dibatalkan dan slot konselor akan kembali tersedia untuk mahasiswa lain.',
+        confirmLabel: 'Batalkan Janji',
+        loading: cancelling === confirmAction.id,
+      }
+    : confirmAction?.type === 'deleteHistory'
+      ? {
+          title: 'Hapus Riwayat Sesi?',
+          description: 'Riwayat ini akan disembunyikan dari tampilan Anda. Data utama tetap tersimpan untuk kebutuhan sistem.',
+          confirmLabel: 'Hapus Riwayat',
+          loading: deletingHistory === confirmAction.id,
+        }
+      : null
 
   const upcoming = all.filter(a => a.status === 'PENDING' || a.status === 'APPROVED')
   const history = all.filter(a => ['COMPLETED', 'CANCELLED', 'REJECTED'].includes(a.status))
@@ -350,6 +444,16 @@ export default function JadwalSaya() {
           }}
         />
       )}
+      {confirmAction && confirmModalCopy && (
+        <ConfirmModal
+          {...confirmModalCopy}
+          onClose={() => setConfirmAction(null)}
+          onConfirm={() => {
+            if (confirmAction.type === 'cancelAppointment') handleCancel(confirmAction.id)
+            if (confirmAction.type === 'deleteHistory') handleDeleteHistory(confirmAction.id)
+          }}
+        />
+      )}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground">Jadwal Saya</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -367,7 +471,7 @@ export default function JadwalSaya() {
                 <SessionCard
                   key={a.id}
                   appt={a}
-                  onCancel={handleCancel}
+                  onCancel={(id) => setConfirmAction({ type: 'cancelAppointment', id })}
                   cancelling={cancelling === a.id}
                 />
               ))}
@@ -412,6 +516,8 @@ export default function JadwalSaya() {
                     onReview={(id, name) => {
                       if (!reviewedIds.has(id)) setReviewTarget({ id, name })
                     }}
+                    onDelete={(id) => setConfirmAction({ type: 'deleteHistory', id })}
+                    deleting={deletingHistory === a.id}
                   />
                 ))}
               </div>

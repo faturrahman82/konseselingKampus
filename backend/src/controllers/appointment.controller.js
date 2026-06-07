@@ -93,6 +93,24 @@ const updateMeetingLink = async (req, res, next) => {
     }
 };
 
+const hideStudentHistory = async (req, res, next) => {
+    try {
+        const result = await appointmentService.hideStudentHistory(req.user.userId, req.params.id);
+        res.json({ success: true, message: 'Riwayat sesi berhasil dihapus.', data: result });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const hideCounselorHistory = async (req, res, next) => {
+    try {
+        const result = await appointmentService.hideCounselorHistory(req.user.userId, req.params.id);
+        res.json({ success: true, message: 'Riwayat sesi berhasil dihapus.', data: result });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = { 
     createAppointment, 
     updateStatus, 
@@ -102,5 +120,7 @@ module.exports = {
     getMyStudents, 
     getStudentDetail,
     cancelMyAppointment,
-    updateMeetingLink
+    updateMeetingLink,
+    hideStudentHistory,
+    hideCounselorHistory
 };

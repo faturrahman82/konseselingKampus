@@ -2,7 +2,7 @@ import api from '@/api/axios'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AuthLayout } from '@/layouts/AuthLayout'
-import { RegisterForm } from '@/components/organisms/RegisterForm'
+import { RegisterForm, type RegisterFormValues } from '@/components/organisms/RegisterForm'
 import { CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -11,19 +11,27 @@ export default function Register() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
-  const handleRegister = async (data: any) => {
+  const handleRegister = async (data: RegisterFormValues) => {
     setLoading(true)
     try {
       // confirmPassword hanya untuk validasi frontend, tidak dikirim ke BE
-      const { confirmPassword, ...payload } = data
+      const payload = {
+        fullName: data.fullName,
+        username: data.username,
+        email: data.email,
+        password: data.password,
+      }
 
       await api.post('/auth/register', payload)
 
       // Tampilkan pesan sukses sebentar, lalu redirect ke login
       setSuccess(true)
       setTimeout(() => navigate('/login'), 2000)
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Pendaftaran gagal. Silakan coba lagi.')
+    } catch (error: unknown) {
+      const message = typeof error === 'object' && error !== null && 'response' in error
+        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+        : undefined
+      toast.error(message || 'Pendaftaran gagal. Silakan coba lagi.')
     } finally {
       setLoading(false)
     }
@@ -34,6 +42,7 @@ export default function Register() {
       <AuthLayout
         title="Akun Berhasil Dibuat!"
         subtitle="Anda akan diarahkan ke halaman masuk..."
+        showHomeLink
         footer={
           <span>
             <Link to="/login" className="font-semibold text-primary hover:underline">
@@ -58,6 +67,7 @@ export default function Register() {
     <AuthLayout
       title="Buat Akun Baru"
       subtitle="Daftarkan diri Anda untuk mulai menggunakan layanan."
+      showHomeLink
       footer={
         <span>
           Sudah punya akun?{' '}

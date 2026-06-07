@@ -56,4 +56,14 @@ const resetPassword = async (req, res, next) => {
     }
 };
 
-module.exports = { register, login, completeProfile, getMe, forgotPassword, resetPassword };
+const changePassword = async (req, res, next) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const result = await authService.changePassword(req.user.userId, currentPassword, newPassword);
+        res.json({ success: true, message: result.message });
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { register, login, completeProfile, getMe, forgotPassword, resetPassword, changePassword };
