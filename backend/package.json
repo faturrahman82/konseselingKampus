@@ -8,6 +8,7 @@
     "dev": "node --watch index.js",
     "build": "npx prisma generate",
     "postinstall": "prisma generate",
+    "schema:check": "node scripts/check-schema.js",
     "test": "node --test"
   },
   "keywords": [],

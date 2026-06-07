@@ -15,14 +15,22 @@ class AppError extends Error {
 const errorHandler = (err, req, res, next) => {
     const statusCode = err.statusCode || 500;
     const message = err.message || 'Internal Server Error';
+    const isSchemaDrift = err.code === 'P2022';
 
-    console.error(`[ERROR] ${statusCode} - ${message}`);
+    console.error(`[ERROR] ${statusCode} - ${message}`, {
+        code: err.code,
+        path: req.originalUrl,
+        method: req.method,
+        ...(isSchemaDrift && { missingColumn: err.meta?.column }),
+    });
 
     res.status(statusCode).json({
         success: false,
-        message: statusCode >= 500 && process.env.NODE_ENV === 'production'
-            ? 'Terjadi kesalahan pada server.'
-            : message,
+        message: isSchemaDrift
+            ? 'Struktur database belum sinkron dengan aplikasi.'
+            : statusCode >= 500 && process.env.NODE_ENV === 'production'
+                ? 'Terjadi kesalahan pada server.'
+                : message,
         code: err.code || undefined,
         ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
     });
