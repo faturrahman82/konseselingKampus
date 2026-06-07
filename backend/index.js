@@ -74,16 +74,42 @@ app.use(compression());
 // CORS: Production dikunci via env, tapi tetap support domain Vercel (preview/prod).
 const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173')
     .split(',')
-    .map((origin) => origin.trim())
+    .map((origin) => origin.trim().replace(/\/$/, ''))
     .filter(Boolean);
+const vercelPreviewPrefixes = (process.env.CORS_VERCEL_PREVIEW_PREFIXES || 'konseseling-kampus-r4gu')
+    .split(',')
+    .map((prefix) => prefix.trim().toLowerCase())
+    .filter(Boolean);
+
+const isAllowedOrigin = (origin) => {
+    if (!origin) return true;
+
+    const normalizedOrigin = origin.replace(/\/$/, '');
+    if (allowedOrigins.includes(normalizedOrigin)) return true;
+
+    try {
+        const { protocol, hostname } = new URL(normalizedOrigin);
+        if (protocol !== 'https:' || !hostname.endsWith('.vercel.app')) return false;
+
+        return vercelPreviewPrefixes.some((prefix) => (
+            hostname === `${prefix}.vercel.app`
+            || hostname.startsWith(`${prefix}-`)
+        ));
+    } catch {
+        return false;
+    }
+};
+
 const corsOptions = {
     origin(origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        if (isAllowedOrigin(origin)) return callback(null, true);
         const error = new Error('Origin tidak diizinkan oleh CORS.');
         error.statusCode = 403;
         return callback(error);
     },
     credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
 };
 app.use(cors(corsOptions));
 
