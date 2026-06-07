@@ -37,6 +37,7 @@ UniCounsel dibuat untuk mendigitalisasi proses layanan konseling di lingkungan k
 - [API Endpoint](#-api-endpoint)
 - [Halaman Aplikasi](#-halaman-aplikasi)
 - [Catatan Production](#-catatan-production)
+- [CI/CD GitHub Actions](#cicd-github-actions)
 
 ---
 
@@ -284,6 +285,7 @@ PORT=5000
 NODE_ENV=development
 FRONTEND_URL=http://localhost:5173
 DATABASE_URL="mysql://USER:PASSWORD@HOST:PORT/DATABASE"
+CORS_ORIGINS="http://localhost:5173,https://frontend-domain-anda.example"
 JWT_SECRET=your_jwt_secret
 
 SMTP_HOST=smtp.gmail.com
@@ -384,6 +386,62 @@ http://localhost:5173/register
 
 ---
 
+
+## CI/CD GitHub Actions
+
+Workflow tersedia pada `.github/workflows/ci-cd.yml` dan berjalan untuk pull request menuju `main`, push ke `main`, serta eksekusi manual melalui tab **Actions**.
+
+Pemeriksaan wajib pada CI:
+
+1. Instalasi dependency frontend dan backend menggunakan `npm ci`.
+2. Build production frontend.
+3. Generate dan validasi Prisma Client.
+4. Menjalankan seluruh backend test.
+
+Lint frontend tetap dijalankan sebagai laporan, tetapi sementara bersifat non-blocking karena masih terdapat utang lint pada beberapa file lama.
+
+### Continuous Deployment melalui Vercel
+
+Repository utama:
+
+- [faturrahman82/konseselingKampus](https://github.com/faturrahman82/konseselingKampus)
+
+Deployment menggunakan integrasi GitHub bawaan Vercel agar tidak terjadi deployment ganda dari GitHub Actions.
+
+| Aplikasi | Project Vercel | Root Directory |
+|---|---|---|
+| Frontend | [konseseling-kampus-r4gu](https://vercel.com/faturrahmans-projects/konseseling-kampus-r4gu) | `frontend` |
+| Backend | [konseseling-kampus](https://vercel.com/faturrahmans-projects/konseseling-kampus) | `backend` |
+
+Pastikan pada kedua project Vercel:
+
+1. Repository Git yang terhubung adalah `faturrahman82/konseselingKampus`.
+2. Production Branch diatur ke `main`.
+3. Root Directory sesuai tabel di atas.
+4. Automatic deployments dari Git tetap aktif.
+
+Environment variables aplikasi seperti `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGINS`, dan `VITE_API_URL` dikonfigurasi langsung pada masing-masing project Vercel, bukan dimasukkan ke repository.
+
+Untuk memastikan production hanya menerima kode yang lolos CI, aktifkan branch protection pada GitHub melalui **Settings > Branches > Add branch protection rule** untuk branch `main`, lalu wajibkan status checks:
+
+- `Frontend checks`
+- `Backend checks`
+
+Alur akhirnya:
+
+```text
+Pull Request ke GitHub
+        |
+GitHub Actions menjalankan CI
+        |
+Merge ke main setelah seluruh check berhasil
+        |
+Vercel mendeteksi perubahan pada main
+        |
+Frontend dan backend dideploy otomatis
+```
+
+---
 
 ## 📌 Status Project
 
