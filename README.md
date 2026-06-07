@@ -396,9 +396,9 @@ Pemeriksaan wajib pada CI:
 1. Instalasi dependency frontend dan backend menggunakan `npm ci`.
 2. Build production frontend.
 3. Generate dan validasi Prisma Client.
-4. Menjalankan seluruh backend test.
+4. Menjalankan seluruh backend test ketika folder `backend/test` sudah tersedia di repository.
 
-Lint frontend tetap dijalankan sebagai laporan, tetapi sementara bersifat non-blocking karena masih terdapat utang lint pada beberapa file lama.
+Lint frontend tetap dijalankan sebagai laporan artifact, tetapi sementara bersifat non-blocking karena masih terdapat utang lint pada beberapa file lama.
 
 ### Continuous Deployment melalui Vercel
 
